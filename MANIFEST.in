@@ -1,0 +1,5 @@
+recursive-include bldrx/templates *
+include README.md
+include PROJECT_OUTLINE.md
+include requirements.txt
+include pyproject.toml

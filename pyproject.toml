@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bldrx"
+version = "0.1.0"
+description = "CLI-first scaffold & template injector"
+authors = [ { name = "VoxDroid", email = "izeno.contact@gmail.com" } ]
+
+[project.scripts]
+bldrx = "bldrx.cli:cli"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.package-data]
+"bldrx" = ["templates/**/*"]

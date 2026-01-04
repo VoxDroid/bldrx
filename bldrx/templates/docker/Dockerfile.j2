@@ -1,0 +1,11 @@
+# Dockerfile for {{ project_name }}
+FROM python:3.11-slim as base
+WORKDIR /app
+
+# Install dependencies if requirements.txt exists
+COPY requirements.txt .
+RUN if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+COPY . .
+
+CMD ["python", "-m", "{{ project_name }}"]

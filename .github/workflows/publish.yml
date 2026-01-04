@@ -47,7 +47,7 @@ jobs:
             echo "publish=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Debug: show decision
+      - name: "Debug: show decision"
         if: always()
         shell: bash
         run: |

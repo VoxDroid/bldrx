@@ -199,12 +199,23 @@ class Engine:
                     out.append(entry)
         return out
 
-    def apply_template(self, template_name: str, dest: Path, metadata: dict, force: bool = False, dry_run: bool = False, templates_dir: Path = None, backup: bool = False, git_commit: bool = False, git_message: str = None):
+    def preview_apply(self, template_name: str, dest: Path, metadata: dict, force: bool = False, templates_dir: Path = None):
+        """Return a structured preview of applying the template (non-destructive).
+
+        Each entry: {'path': str, 'action': 'would-render'|'would-copy'|'skipped'}
+        """
+        out = []
+        for path, status in self.apply_template(template_name, dest, metadata, force=force, dry_run=True, templates_dir=templates_dir):
+            out.append({'path': path, 'action': status})
+        return out
+
+    def apply_template(self, template_name: str, dest: Path, metadata: dict, force: bool = False, dry_run: bool = False, templates_dir: Path = None, backup: bool = False, git_commit: bool = False, git_message: str = None, atomic: bool = False):
         """Apply the named template into `dest`.
 
         New options:
         - backup: if True, save overwritten files into `dest/.bldrx/backups/<timestamp>/...` before writing.
         - git_commit: if True and `dest` is a git repo, stage & commit changes after apply with `git_message`.
+        - atomic: if True, perform per-file atomic replace with rollback on failure.
         """
         import subprocess
 
@@ -219,6 +230,10 @@ class Engine:
             backups_root.mkdir(parents=True, exist_ok=True)
 
         made_changes = False
+
+        # Keep global state for atomic replacements so we can rollback across multiple files
+        global_replaced = []  # list of (final_path, backup_path or None)
+        global_new_created = []
 
         # Walk files
         for p in src.rglob("*"):
@@ -243,15 +258,75 @@ class Engine:
                 if dry_run:
                     yield (str(out_path), "would-render")
                     continue
-                # backup existing
-                if out_path.exists() and backup:
-                    bpath = backups_root / out_path.relative_to(dest)
-                    bpath.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copy2(out_path, bpath)
-                out_path.parent.mkdir(parents=True, exist_ok=True)
-                out_path.write_text(text, encoding="utf-8")
-                made_changes = True
-                yield (str(out_path), "rendered")
+
+                # perform atomic write/replace if requested
+                if atomic:
+                    ts = datetime.now().strftime("%Y%m%d%H%M%S")
+                    tmp_name = out_path.name + f".bldrx.tmp.{ts}"
+                    tmp_path = out_path.parent / tmp_name
+                    # write to temp file in same dir (ensures os.replace is atomic)
+                    out_path.parent.mkdir(parents=True, exist_ok=True)
+                    tmp_path.write_text(text, encoding="utf-8")
+                    replaced = []  # list of tuples (final_path, backup_path or None)
+                    new_created = []
+                    try:
+                        # backup existing if needed
+                        if out_path.exists() and backup:
+                            bpath = backups_root / out_path.relative_to(dest)
+                            bpath.parent.mkdir(parents=True, exist_ok=True)
+                            shutil.copy2(out_path, bpath)
+                            replaced.append((out_path, bpath))
+                            global_replaced.append((out_path, bpath))
+                        else:
+                            if out_path.exists():
+                                replaced.append((out_path, None))
+                                global_replaced.append((out_path, None))
+                            else:
+                                new_created.append(out_path)
+                                global_new_created.append(out_path)
+                        # atomic replace
+                        os.replace(str(tmp_path), str(out_path))
+                        made_changes = True
+                        yield (str(out_path), "rendered")
+                    except Exception as e:
+                        # rollback across all files replaced so far
+                        for fpath, bpath in global_replaced:
+                            try:
+                                if bpath is not None and bpath.exists():
+                                    os.replace(str(bpath), str(fpath))
+                            except Exception:
+                                pass
+                        for fpath in global_new_created:
+                            try:
+                                if fpath.exists():
+                                    fpath.unlink()
+                            except Exception:
+                                pass
+                        # cleanup temp
+                        try:
+                            if tmp_path.exists():
+                                tmp_path.unlink()
+                        except Exception:
+                            pass
+                        raise RuntimeError(f"Atomic replace failed for {out_path}: {e}")
+                    finally:
+                        # cleanup any leftover tmp files
+                        try:
+                            if tmp_path.exists():
+                                tmp_path.unlink()
+                        except Exception:
+                            pass
+                else:
+                    # non-atomic path
+                    # backup existing
+                    if out_path.exists() and backup:
+                        bpath = backups_root / out_path.relative_to(dest)
+                        bpath.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(out_path, bpath)
+                    out_path.parent.mkdir(parents=True, exist_ok=True)
+                    out_path.write_text(text, encoding="utf-8")
+                    made_changes = True
+                    yield (str(out_path), "rendered")
             else:
                 # raw file
                 if target.exists() and not force:
@@ -260,15 +335,63 @@ class Engine:
                 if dry_run:
                     yield (str(target), "would-copy")
                     continue
-                # backup existing
-                if target.exists() and backup:
-                    bpath = backups_root / target.relative_to(dest)
-                    bpath.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copy2(target, bpath)
-                target.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(p, target)
-                made_changes = True
-                yield (str(target), "copied")
+                if atomic:
+                    ts = datetime.now().strftime("%Y%m%d%H%M%S")
+                    tmp_name = target.name + f".bldrx.tmp.{ts}"
+                    tmp_path = target.parent / tmp_name
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(p, tmp_path)
+                    replaced = []
+                    new_created = []
+                    try:
+                        if target.exists() and backup:
+                            bpath = backups_root / target.relative_to(dest)
+                            bpath.parent.mkdir(parents=True, exist_ok=True)
+                            shutil.copy2(target, bpath)
+                            replaced.append((target, bpath))
+                        else:
+                            if target.exists():
+                                replaced.append((target, None))
+                            else:
+                                new_created.append(target)
+                        os.replace(str(tmp_path), str(target))
+                        made_changes = True
+                        yield (str(target), "copied")
+                    except Exception as e:
+                        for fpath, bpath in replaced:
+                            try:
+                                if bpath is not None and bpath.exists():
+                                    os.replace(str(bpath), str(fpath))
+                            except Exception:
+                                pass
+                        for fpath in new_created:
+                            try:
+                                if fpath.exists():
+                                    fpath.unlink()
+                            except Exception:
+                                pass
+                        try:
+                            if tmp_path.exists():
+                                tmp_path.unlink()
+                        except Exception:
+                            pass
+                        raise RuntimeError(f"Atomic replace failed for {target}: {e}")
+                    finally:
+                        try:
+                            if tmp_path.exists():
+                                tmp_path.unlink()
+                        except Exception:
+                            pass
+                else:
+                    # backup existing
+                    if target.exists() and backup:
+                        bpath = backups_root / target.relative_to(dest)
+                        bpath.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(target, bpath)
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(p, target)
+                    made_changes = True
+                    yield (str(target), "copied")
 
         # After all files applied, optionally commit to git
         if git_commit and made_changes:

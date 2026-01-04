@@ -44,6 +44,7 @@
 | Templates: node-api, react-app | Implemented | Basic skeleton templates included |
 | Safe merging (content-level merge) | Planned | Current behavior: skip existing unless `--force` (no intelligent merge yet) |
 | Config files for defaults (`.bldrx` etc.) | Planned | Add user config to store defaults and metadata per user/project |
+| Transactional apply & atomic replace | Implemented | Per-file atomic replace using temp files in destination dir; rollback on failure; supports `--atomic` and `backup`; tests added (see `tests/test_transactional_apply.py`) |
 | Tests | Implemented | Unit tests for engine, CLI, templates, user templates, docs included |
 | CI (tests on push/PR) | Implemented | `.github/workflows/ci.yml` runs pytest matrix (3.9–3.11) |
 | CI artifact build/publish on tag | Planned | Add workflow to build artifacts and upload/publish on tag |

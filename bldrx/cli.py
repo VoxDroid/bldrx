@@ -17,7 +17,8 @@ def cli():
 @click.option('--meta', multiple=True, help='Additional metadata as KEY=VAL; can be passed multiple times')
 @click.option('--force', is_flag=True)
 @click.option('--dry-run', 'dry_run', is_flag=True, help='Show planned actions but do not write files')
-def new(project_name, templates, project_type, author, email, github_username, meta, force, dry_run):
+@click.option('--json', 'as_json', is_flag=True, help='Output machine-readable JSON when used with --dry-run')
+def new(project_name, templates, project_type, author, email, github_username, meta, force, dry_run, as_json):
     """Scaffold a new project"""
     engine = Engine()
     dest = Path(project_name)
@@ -50,10 +51,21 @@ def new(project_name, templates, project_type, author, email, github_username, m
         if '=' in item:
             k, v = item.split('=', 1)
             metadata[k.strip()] = v.strip()
+    all_actions = []
     for t in templates:
         click.echo(f"Applying template: {t}")
-        for path, status in engine.apply_template(t, dest, metadata, force=force, dry_run=dry_run):
-            click.echo(f"  {status}: {path}")
+        if dry_run and as_json:
+            preview = engine.preview_apply(t, dest, metadata, force=force)
+            all_actions.extend(preview)
+            for e in preview:
+                click.echo(f"  {e['action']}: {e['path']}")
+        else:
+            for path, status in engine.apply_template(t, dest, metadata, force=force, dry_run=dry_run):
+                click.echo(f"  {status}: {path}")
+    if dry_run and as_json:
+        import json
+        click.echo(json.dumps(all_actions))
+        return
     click.echo('Done.')
 
 @cli.command('list-templates')
@@ -93,7 +105,8 @@ def list_templates(as_json, templates_dir, details):
 @click.option('--meta', multiple=True, help='Additional metadata as KEY=VAL; can be passed multiple times')
 @click.option('--force', is_flag=True)
 @click.option('--dry-run', 'dry_run', is_flag=True, help='Show planned actions but do not write files')
-def add_templates(project_path, templates, templates_dir, author, email, github_username, meta, force, dry_run):
+@click.option('--json', 'as_json', is_flag=True, help='Output machine-readable JSON when used with --dry-run')
+def add_templates(project_path, templates, templates_dir, author, email, github_username, meta, force, dry_run, as_json):
     """Inject templates into existing project"""
     engine = Engine()
     dest = Path(project_path)
@@ -119,10 +132,21 @@ def add_templates(project_path, templates, templates_dir, author, email, github_
         if '=' in item:
             k, v = item.split('=', 1)
             metadata[k.strip()] = v.strip()
+    all_actions = []
     for t in templates:
         click.echo(f"Applying template: {t}")
-        for path, status in engine.apply_template(t, dest, metadata, force=force, dry_run=dry_run, templates_dir=templates_dir):
-            click.echo(f"  {status}: {path}")
+        if dry_run and as_json:
+            preview = engine.preview_apply(t, dest, metadata, force=force, templates_dir=templates_dir)
+            all_actions.extend(preview)
+            for e in preview:
+                click.echo(f"  {e['action']}: {e['path']}")
+        else:
+            for path, status in engine.apply_template(t, dest, metadata, force=force, dry_run=dry_run, templates_dir=templates_dir):
+                click.echo(f"  {status}: {path}")
+    if dry_run and as_json:
+        import json
+        click.echo(json.dumps(all_actions))
+        return
     click.echo('Done.')
 
 @cli.command('remove-template')

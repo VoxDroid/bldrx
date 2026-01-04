@@ -29,8 +29,7 @@ This document explains advanced workflows and recommendations for template autho
 
 ## CI Integration
 
-- Use `scripts/ci_validate_templates.py` in CI to validate templates (syntax, unresolved variables, and manifest verification). The repository includes a `validate-templates` job in `.github/workflows/ci.yml` which runs on push/PR.
-- For publishing artifacts (sdist/wheel), use the `build-artifacts` job (runs on tag) and add a `publish` job that runs on release with `twine` and secure secrets (not yet added).
+- Use `scripts/ci_validate_templates.py` in CI to validate templates (syntax, unresolved variables, and manifest verification). The repository includes a `validate-templates` job in `.github/workflows/ci.yml` which runs on push/PR.- The `validate-templates` job is configured to **fail** on undefined Jinja variables only for pushes to the `main` branch (set via `BLDRX_VALIDATE_FAIL_ON_UNDEFINED`), while PRs will report **warnings** to avoid noisy failures for contributors. You can override this behavior by setting `BLDRX_VALIDATE_FAIL_ON_UNDEFINED=1` at the job level in your workflow.- For publishing artifacts (sdist/wheel), use the `build-artifacts` job (runs on tag) and add a `publish` job that runs on release with `twine` and secure secrets (not yet added).
 
 ## Telemetry & privacy
 

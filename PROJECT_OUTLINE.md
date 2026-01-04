@@ -35,6 +35,7 @@
 | Dry-run and force behavior | Implemented | `would-render` / `would-copy` / `would-remove` statuses reported |
 | User templates directory & env override | Implemented | `BLDRX_TEMPLATES_DIR` and default user dir supported |
 | Template preview & file list | Implemented | `preview-template` and `list-templates --details` added |
+| Show diffs / patch preview | Implemented | `preview-template --render --diff` shows unified diffs; `--json` outputs machine-readable previews; `Engine.preview_template` added |
 | Templates: python-cli | Implemented | README, LICENSE, src template |
 | Templates: github meta files | Implemented | Root files and `.github/` issue templates, funding.yml |
 | Templates: CI workflows | Implemented | `ci.yml` and `deploy.yml` templates included |
@@ -67,12 +68,14 @@ These are the next features we will implement, prioritized for impact and feasib
      - `Engine.apply_template(..., git_commit=True, git_message=<msg>)` commits the changes into the repo in `dest` with the provided message.
      - Tests: unit tests that validate backup files and git commit message.
 
-2. Show diffs / patch preview (small)
+2. Show diffs / patch preview (Implemented)
    - Goal: On `--dry-run` or `preview`, show unified diffs of what would change.
-   - Acceptance criteria:
+   - Status: Implemented. See `Engine.preview_template(...)` and CLI flags `preview-template --render --diff` and `--json`.
+   - Acceptance criteria (met):
      - `preview-template --render --diff` prints unified diff to stdout.
-     - `engine.render_preview(..., diff=True)` returns a diff string.
-     - Tests: snapshot tests asserting expected diff output for a small template change.
+     - `preview-template --render --diff --json` outputs machine-readable JSON suitable for CI/automation.
+     - `Engine.preview_template(..., diff=True)` returns a list of preview entries with `diff` fields when requested.
+     - Tests: added `tests/test_preview_diff.py` and `tests/test_cli_preview_diff.py` validating unified diff and JSON output.
 
 3. Template validator / linter (small)
    - Goal: Validate `.j2` syntax and warn about unresolved variables before apply.

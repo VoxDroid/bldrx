@@ -106,6 +106,67 @@ class Engine:
         else:
             return target.read_text(encoding='utf-8')
 
+    def preview_template(self, template_name: str, dest: Path, metadata: dict, templates_dir: Path = None, diff: bool = False):
+        """Return a preview list describing what would happen if the template were applied to `dest`.
+
+        Each entry is a dict: {path: str, action: 'would-render'|'would-copy'|'skipped', diff: optional unified diff}
+        """
+        from difflib import unified_diff
+        src = self._find_template_src(template_name, templates_dir)
+        dest.mkdir(parents=True, exist_ok=True)
+        out = []
+        for p in src.rglob("*"):
+            if p.is_dir():
+                continue
+            rel = p.relative_to(src)
+            target = dest / rel
+            if p.suffix == '.j2':
+                out_path = target.with_suffix("")
+                # render
+                from jinja2 import Environment, FileSystemLoader, StrictUndefined
+                rel_template_path = str(rel).replace('\\', '/')
+                env = Environment(loader=FileSystemLoader(str(src)), undefined=StrictUndefined)
+                tmpl = env.get_template(rel_template_path)
+                new_text = tmpl.render(**{**metadata, 'year': datetime.now().year})
+                if out_path.exists():
+                    old_text = out_path.read_text(encoding='utf-8')
+                    if old_text == new_text:
+                        out.append({'path': str(out_path), 'action': 'skipped'})
+                        continue
+                    else:
+                        entry = {'path': str(out_path), 'action': 'would-render'}
+                        if diff:
+                            d = '\n'.join(list(unified_diff(old_text.splitlines(), new_text.splitlines(), fromfile=str(out_path), tofile='(rendered)', lineterm='')))
+                            entry['diff'] = d
+                        out.append(entry)
+                else:
+                    entry = {'path': str(out_path), 'action': 'would-render'}
+                    if diff:
+                        d = '\n'.join(list(unified_diff([], new_text.splitlines(), fromfile='(empty)', tofile=str(out_path), lineterm='')))
+                        entry['diff'] = d
+                    out.append(entry)
+            else:
+                # raw file copy
+                if target.exists():
+                    old_text = target.read_text(encoding='utf-8')
+                    new_text = p.read_text(encoding='utf-8')
+                    if old_text == new_text:
+                        out.append({'path': str(target), 'action': 'skipped'})
+                        continue
+                    else:
+                        entry = {'path': str(target), 'action': 'would-copy'}
+                        if diff:
+                            d = '\n'.join(list(unified_diff(old_text.splitlines(), new_text.splitlines(), fromfile=str(target), tofile=str(p), lineterm='')))
+                            entry['diff'] = d
+                        out.append(entry)
+                else:
+                    entry = {'path': str(target), 'action': 'would-copy'}
+                    if diff:
+                        d = '\n'.join(list(unified_diff([], p.read_text(encoding='utf-8').splitlines(), fromfile='(empty)', tofile=str(target), lineterm='')))
+                        entry['diff'] = d
+                    out.append(entry)
+        return out
+
     def apply_template(self, template_name: str, dest: Path, metadata: dict, force: bool = False, dry_run: bool = False, templates_dir: Path = None, backup: bool = False, git_commit: bool = False, git_message: str = None):
         """Apply the named template into `dest`.
 

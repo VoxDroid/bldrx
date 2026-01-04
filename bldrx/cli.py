@@ -210,26 +210,40 @@ def uninstall_template(name, yes):
 @click.argument('template_name')
 @click.option('--file', 'file_path', default=None, help='Relative template file path to preview (e.g., README.md.j2)')
 @click.option('--render', 'do_render', is_flag=True, help='Render the template with provided metadata')
+@click.option('--diff', 'show_diff', is_flag=True, help='Show unified diffs of what would change')
+@click.option('--json', 'as_json', is_flag=True, help='Output machine-readable JSON for automation')
 @click.option('--meta', multiple=True, help='Metadata KEY=VAL to use when rendering')
 @click.option('--templates-dir', default=None, help='Optional templates root to use for this command')
-def preview_template(template_name, file_path, do_render, meta, templates_dir):
+def preview_template(template_name, file_path, do_render, show_diff, as_json, meta, templates_dir):
     """Preview template file contents or rendered output"""
     engine = Engine()
     # allow overriding templates dir for this command
     if templates_dir:
         engine = Engine(user_templates_root=templates_dir)
     try:
+        metadata = {}
+        for item in meta:
+            if '=' in item:
+                k, v = item.split('=', 1)
+                metadata[k.strip()] = v.strip()
+        if do_render and show_diff:
+            # show diffs for the target project root (default: current dir)
+            preview = engine.preview_template(template_name, Path('.'), metadata, templates_dir=templates_dir, diff=True)
+            if as_json:
+                import json
+                click.echo(json.dumps(preview))
+            else:
+                for e in preview:
+                    click.echo(f"{e['action']}: {e['path']}")
+                    if 'diff' in e:
+                        click.echo(e['diff'])
+            return
         if not file_path:
             files = engine.get_template_files(template_name, templates_dir=templates_dir)
             click.echo('Files in template:')
             for f in files:
                 click.echo(f"  - {f}")
             return
-        metadata = {}
-        for item in meta:
-            if '=' in item:
-                k, v = item.split('=', 1)
-                metadata[k.strip()] = v.strip()
         if do_render:
             rendered = engine.render_template_file(template_name, file_path, metadata, templates_dir=templates_dir)
             click.echo(rendered)
@@ -244,6 +258,5 @@ def preview_template(template_name, file_path, do_render, meta, templates_dir):
     except Exception as e:
         click.echo(str(e))
         raise SystemExit(1)
-
 if __name__ == '__main__':
     cli()

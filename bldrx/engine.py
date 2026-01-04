@@ -106,6 +106,38 @@ class Engine:
         else:
             return target.read_text(encoding='utf-8')
 
+    def validate_template(self, template_name: str, templates_dir: Path = None):
+        """Validate the template files for syntax errors and report undefined variables.
+
+        Returns: {
+            'syntax_errors': { relative_path: message },
+            'undefined_variables': { relative_path: [varnames] }
+        }
+        """
+        from jinja2 import Environment, FileSystemLoader, StrictUndefined, exceptions, meta
+        src = self._find_template_src(template_name, templates_dir)
+        res = {'syntax_errors': {}, 'undefined_variables': {}}
+        env = Environment(loader=FileSystemLoader(str(src)), undefined=StrictUndefined)
+        for p in src.rglob("*"):
+            if p.is_dir():
+                continue
+            rel = p.relative_to(src)
+            if p.suffix != '.j2':
+                # raw files are not validated other than existence
+                continue
+            rel_path = str(rel).replace('\\', '/')
+            text = p.read_text(encoding='utf-8')
+            try:
+                # parse to detect syntax errors
+                parsed = env.parse(text)
+            except exceptions.TemplateSyntaxError as e:
+                res['syntax_errors'][rel_path] = str(e)
+                continue
+            # find undeclared variables used in template
+            undef = meta.find_undeclared_variables(parsed)
+            res['undefined_variables'][rel_path] = sorted(list(undef))
+        return res
+
     def preview_template(self, template_name: str, dest: Path, metadata: dict, templates_dir: Path = None, diff: bool = False):
         """Return a preview list describing what would happen if the template were applied to `dest`.
 

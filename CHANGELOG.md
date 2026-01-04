@@ -5,7 +5,7 @@ All notable changes to this project are documented in this file.
 ## Unreleased — Planned improvements (Top priorities)
 
 - Safe backups & Git integration: create reversible backups before modifying files; optional `--git-commit` to create a commit with the injected template and message.
-- Template validator / linter: detect Jinja syntax errors and unresolved variables, report required placeholders.
+- Template validator / linter: in-progress — implementing `Engine.validate_template` and tests to detect Jinja syntax errors and unresolved variables, report required placeholders.
 - Improve preview & dry-run UX: file-level actions and machine-readable `--json` dry-run output.
 
 ## 2026-01-04 — Summary of implemented features & fixes

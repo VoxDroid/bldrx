@@ -77,11 +77,12 @@ These are the next features we will implement, prioritized for impact and feasib
      - `Engine.preview_template(..., diff=True)` returns a list of preview entries with `diff` fields when requested.
      - Tests: added `tests/test_preview_diff.py` and `tests/test_cli_preview_diff.py` validating unified diff and JSON output.
 
-3. Template validator / linter (small)
+3. Template validator / linter (In-progress)
    - Goal: Validate `.j2` syntax and warn about unresolved variables before apply.
+   - Status: In-progress. Implemented `Engine.validate_template` (TDD) to detect template syntax errors and report unresolved variables.
    - Acceptance criteria:
-     - `Engine.validate_template(src)` detects Jinja syntax errors and missing placeholders (configurable required placeholders).
-     - Tests: unit tests that feed a broken template and assert validation errors.
+     - `Engine.validate_template(template_name)` returns a dict containing `syntax_errors` and `undefined_variables` mappings per-file.
+     - Tests: unit tests `tests/test_template_validator.py` verify detection of syntax errors, unresolved variables, and clean templates.
 
 4. Improve preview & dry-run UX (small)
    - Goal: Make `--dry-run` verbose by default and add `--json` output for automation.

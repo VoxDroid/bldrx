@@ -1,0 +1,12 @@
+#!/usr/bin/env python3
+"""demo - main entry"""
+
+import click
+
+@click.command()
+def main():
+    """Entry point for demo"""
+    click.echo('Hello from demo')
+
+if __name__ == '__main__':
+    main()

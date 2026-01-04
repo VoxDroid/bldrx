@@ -1,0 +1,51 @@
+name: Support Question
+description: Ask a question or seek help with using `bldrx`
+labels: ["question", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please check the `README.md` and project documentation first. For contribution guidelines see `CONTRIBUTING.md` (if present). For general discussion, check the project's Discussions page.
+        Avoid posting unverified external links or promotional content.
+  - type: checkboxes
+    id: guidelines
+    attributes:
+      label: Guidelines
+      description: Confirm that you have read and agree to follow our guidelines.
+      options:
+        - label: I have read any available contributor guidelines and agree to follow them.
+          required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+      description: Describe your question or issue in detail.
+      placeholder: Ask your question here...
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context / Environment
+      description: Provide platform and environment details (OS, Python version, bldrx version, steps already tried).
+      placeholder: |
+        - OS: e.g., Windows 11
+        - Python: e.g., 3.11
+        - bldrx version: e.g., 0.1.0
+        - What you tried: e.g., `bldrx preview-template ...`
+    validations:
+      required: false
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      description: What is this question about?
+      options:
+        - Installation
+        - Usage
+        - Templates
+        - Configuration
+        - Other
+      default: 1
+    validations:
+      required: true

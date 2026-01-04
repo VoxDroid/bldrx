@@ -1,0 +1,86 @@
+name: Bug Report
+description: Report a bug or issue with `bldrx`
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug — please provide a clear, reproducible example if possible.
+  - type: checkboxes
+    id: guidelines
+    attributes:
+      label: Guidelines
+      description: Confirm that you have read and agree to follow our guidelines.
+      options:
+        - label: I have read any available contributor guidelines and agree to follow them.
+          required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Short description
+      description: A clear and concise description of the bug.
+      placeholder: Describe what happened...
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Provide detailed steps to reproduce the issue.
+      placeholder: |
+        1. Step 1
+        2. Step 2
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected behavior
+      description: What you expected to happen.
+      placeholder: Describe what should have happened...
+    validations:
+      required: true
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual behavior
+      description: What actually happened.
+      placeholder: Describe what went wrong...
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      description: Which operating system are you using?
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - Other
+      default: 0
+    validations:
+      required: true
+  - type: input
+    id: python-version
+    attributes:
+      label: Python version
+      description: What version of Python are you using?
+      placeholder: e.g., 3.11
+    validations:
+      required: false
+  - type: input
+    id: bldrx-version
+    attributes:
+      label: bldrx version
+      description: What version of bldrx are you using?
+      placeholder: e.g., 0.1.0
+    validations:
+      required: false
+  - type: textarea
+    id: attachments
+    attributes:
+      label: Screenshots / Logs
+      description: Attach screenshots or paste relevant logs to help explain the issue.
+    validations:
+      required: false

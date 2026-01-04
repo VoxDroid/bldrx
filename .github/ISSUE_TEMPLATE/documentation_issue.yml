@@ -1,0 +1,40 @@
+name: Documentation Issue
+description: Report errors or suggest improvements to `bldrx` documentation
+labels: ["documentation", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve the docs. Please provide a clear description and any proposed fix or example.
+  - type: checkboxes
+    id: guidelines
+    attributes:
+      label: Guidelines
+      description: Confirm that you have read and agree to follow our guidelines.
+      options:
+        - label: I have read any available contributor guidelines and agree to follow them.
+          required: true
+  - type: textarea
+    id: doc-issue
+    attributes:
+      label: Documentation issue
+      description: Describe the issue or improvement needed in the documentation.
+      placeholder: e.g., Missing steps in README, unclear instructions in docs/ or templates
+    validations:
+      required: true
+  - type: input
+    id: doc-location
+    attributes:
+      label: Documentation location
+      description: Where is the issue located?
+      placeholder: e.g., README.md, docs/ADVANCED_SCENARIOS.md
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested fix
+      description: If you have a suggestion for how to fix this, please describe it.
+      placeholder: e.g., Add an example snippet or clarify the command usage
+    validations:
+      required: false

@@ -1,0 +1,51 @@
+name: Security Report
+description: Report a security vulnerability in `bldrx`
+labels: ["security", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for responsibly disclosing security issues. Do **not** post sensitive vulnerability details publicly — use GitHub's security advisories or contact the maintainers privately.
+        If you prefer private disclosure, email: izeno.contact@gmail.com (project maintainer). If available, consult `SECURITY.md` for additional guidance.
+  - type: checkboxes
+    id: guidelines
+    attributes:
+      label: Guidelines
+      description: Confirm that you have read and agree to follow our guidelines for disclosure.
+      options:
+        - label: I will follow responsible disclosure practices and will not publish sensitive details publicly.
+          required: true
+  - type: textarea
+    id: vulnerability
+    attributes:
+      label: Vulnerability description
+      description: Describe the security issue in as much detail as is safe to share here.
+      placeholder: e.g., Potential issue description (avoid posting secrets)
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: What is the potential impact of this vulnerability?
+      placeholder: e.g., Could allow unauthorized access to user data...
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce (if known)
+      description: Provide steps to reproduce the issue, if known.
+      placeholder: |
+        1. Step 1
+        2. Step 2
+    validations:
+      required: false
+  - type: textarea
+    id: mitigation
+    attributes:
+      label: Suggested mitigation
+      description: If you have ideas for mitigating this issue, please describe them.
+      placeholder: e.g., Add input validation to prevent...
+    validations:
+      required: false

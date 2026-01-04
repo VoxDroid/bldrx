@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: General Discussion
+    url: https://github.com/VoxDroid/bldrx/discussions
+    about: For ideas, questions, or feedback, please use the Discussions tab.
+  - name: Support Resources
+    url: https://github.com/VoxDroid/bldrx/blob/main/SUPPORT.md
+    about: Check the Support page for common issues and solutions.
+  - name: Security Contact
+    url: mailto:izeno.contact@gmail.com
+    about: For sensitive security issues, please contact the maintainer privately or use GitHub security advisories.

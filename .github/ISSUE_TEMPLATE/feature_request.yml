@@ -1,0 +1,55 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for `bldrx`
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to suggest improvements. Please describe the feature and its value to users.
+  - type: checkboxes
+    id: guidelines
+    attributes:
+      label: Guidelines
+      description: Confirm that you have read and agree to follow our guidelines.
+      options:
+        - label: I have read any available contributor guidelines and agree to follow them.
+          required: true
+  - type: textarea
+    id: feature-description
+    attributes:
+      label: Feature Description
+      description: Describe the feature and why it would be useful.
+      placeholder: Explain the feature...
+    validations:
+      required: true
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case
+      description: Provide examples of how this feature would be used.
+      placeholder: Describe scenarios where this feature would help...
+    validations:
+      required: false
+  - type: textarea
+    id: challenges
+    attributes:
+      label: Potential Challenges
+      description: Any challenges or considerations for implementing this feature?
+      placeholder: Note any technical or design challenges...
+    validations:
+      required: false
+  - type: dropdown
+    id: feature-type
+    attributes:
+      label: Feature Type
+      description: What type of feature is this?
+      options:
+        - CLI Improvement
+        - Templates
+        - Registry / Catalog
+        - Plugin / Extensibility
+        - Documentation
+        - Other
+      default: 0
+    validations:
+      required: true

@@ -6,7 +6,12 @@ build-backend = "setuptools.build_meta"
 name = "bldrx"
 version = "0.1.0"
 description = "CLI-first scaffold & template injector"
+readme = "README.md"
 authors = [ { name = "VoxDroid", email = "izeno.contact@gmail.com" } ]
+
+[project.urls]
+Repository = "https://github.com/VoxDroid/bldrx"
+Homepage = "https://github.com/VoxDroid/bldrx"
 
 [project.scripts]
 bldrx = "bldrx.cli:cli"

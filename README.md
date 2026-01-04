@@ -69,6 +69,13 @@ Config file (planned): support a `.bldrx` TOML/YAML file to store default metada
 - Contributions are welcome: open issues or PRs. See `CONTRIBUTING.md` template for guidance.
 - For support, open an issue on the repository or contact the project maintainer listed in `pyproject.toml`.
 
+## Project metadata
+
+- **Owner:** VoxDroid
+- **GitHub:** https://github.com/VoxDroid
+- **Repository:** https://github.com/VoxDroid/bldrx
+- **Contact:** izeno.contact@gmail.com
+
 ---
 
 

@@ -27,11 +27,12 @@ jobs:
           version=$(python -c "import re,sys;print(re.search(r'(?m)^\\s*version\\s*=\\s*\"([^\"]+)\"', open('pyproject.toml').read()).group(1))")
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
-      - name: Get latest commit message
+      - name: Get latest commit message (subject only)
         id: get_message
         shell: bash
         run: |
-          commit_message="$(git log -1 --pretty=%B | tr -d '\r')"
+          # use the commit subject (%s) to avoid multiline bodies which break GITHUB_OUTPUT
+          commit_message="$(git log -1 --pretty=%s | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
           echo "commit_message=$commit_message" >> "$GITHUB_OUTPUT"
 
       - name: Decide whether to publish

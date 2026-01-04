@@ -1,5 +1,9 @@
 # Pull Request
 
+**Project:** `bldrx` — a CLI-first scaffold & template injector  
+**Repository:** https://github.com/VoxDroid/bldrx  
+**Maintainer / Contact:** izeno.contact@gmail.com
+
 Thank you for contributing to `bldrx`! Please complete this template to help reviewers evaluate your changes quickly.
 
 ## Summary

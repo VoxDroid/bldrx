@@ -5,7 +5,11 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for helping improve the docs. Please provide a clear description and any proposed fix or example.
+        **Project:** `bldrx` — a CLI-first scaffold & template injector
+        **Repository:** https://github.com/VoxDroid/bldrx
+        **Maintainer / Contact:** izeno.contact@gmail.com
+
+        Thanks for helping improve the docs. Please provide a clear description and any proposed fix or example. If your suggested change affects template usage or CI validation, mention how to reproduce the issue locally.
   - type: checkboxes
     id: guidelines
     attributes:

@@ -5,7 +5,11 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for reporting a bug — please provide a clear, reproducible example if possible.
+        **Project:** `bldrx` — a CLI-first scaffold & template injector
+        **Repository:** https://github.com/VoxDroid/bldrx
+        **Maintainer / Contact:** izeno.contact@gmail.com
+
+        Thanks for reporting a bug — please provide a clear, reproducible example if possible. If you believe the issue is a security vulnerability, consider using the Security Report template or contact the maintainer privately (see Security Report template for details).
   - type: checkboxes
     id: guidelines
     attributes:

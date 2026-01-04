@@ -5,8 +5,11 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thank you for responsibly disclosing security issues. Do **not** post sensitive vulnerability details publicly — use GitHub's security advisories or contact the maintainers privately.
-        If you prefer private disclosure, email: izeno.contact@gmail.com (project maintainer). If available, consult `SECURITY.md` for additional guidance.
+        **Project:** `bldrx` — a CLI-first scaffold & template injector
+        **Repository:** https://github.com/VoxDroid/bldrx
+        **Maintainer / Contact:** izeno.contact@gmail.com
+
+        Thank you for responsibly disclosing security issues. Do **not** post sensitive vulnerability details publicly — use GitHub's security advisories or contact the maintainers privately. If you prefer private disclosure, email: izeno.contact@gmail.com (project maintainer). If available, consult `SECURITY.md` for additional guidance.
   - type: checkboxes
     id: guidelines
     attributes:

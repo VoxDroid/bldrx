@@ -88,6 +88,7 @@ jobs:
         if: ${{ github.event_name == 'push' }}
         uses: ncipollo/release-action@v1
         with:
+          token: ${{ secrets.RELEASE_GITHUB_TOKEN }}
           tag: v${{ needs.check.outputs.version }}
           name: Release v${{ needs.check.outputs.version }}
           body: "Automated release for v${{ needs.check.outputs.version }}"

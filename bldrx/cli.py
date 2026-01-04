@@ -154,9 +154,14 @@ def remove_template(project_path, template_name, templates_dir, yes, force, dry_
 @cli.command('install-template')
 @click.argument('src_path')
 @click.option('--name', default=None, help='Name to install the template as (default: directory name)')
+@click.option('--wrap', 'wrap_root', is_flag=True, help='Preserve the source top-level folder when installing (wrap contents in that folder)')
 @click.option('--force', is_flag=True, help='Overwrite if the template exists')
-def install_template(src_path, name, force):
-    """Install a template into the user templates directory. If `--name` is omitted an interactive prompt will ask for a name."""
+def install_template(src_path, name, wrap_root, force):
+    """Install a template into the user templates directory. If `--name` is omitted an interactive prompt will ask for a name.
+
+    By default the contents of `src_path` are installed as the template (content-only). Use `--wrap` to preserve the top-level folder
+    from `src_path` as the root inside the installed template (useful when installing a `.github` directory and wanting to keep it at apply time).
+    """
     engine = Engine()
     src = Path(src_path)
     if not src.exists() or not src.is_dir():
@@ -177,7 +182,7 @@ def install_template(src_path, name, force):
                 raise SystemExit(1)
             name = new_name
     try:
-        dest = engine.install_user_template(Path(src_path), name=name, force=True)
+        dest = engine.install_user_template(Path(src_path), name=name, force=True, wrap=wrap_root)
         click.echo(f"Installed template to: {dest}")
     except Exception as e:
         click.echo(str(e))

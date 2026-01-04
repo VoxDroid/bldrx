@@ -30,7 +30,7 @@
 | CLI: `add-templates` | Implemented | Supports interactive selection, `--templates-dir`, metadata |
 | CLI: `list-templates` | Implemented | `--details` shows files, `--json` outputs JSON |
 | CLI: `remove-template` | Implemented | Safety prompts, `--yes` implies removal, `--dry-run` available |
-| CLI: `install-template` / `uninstall-template` | Implemented | Installs to user templates dir; interactive prompts supported |
+| CLI: `install-template` / `uninstall-template` | Implemented | Installs to user templates dir; interactive prompts supported. Supports `--wrap` to preserve the source top-level folder (e.g., install `.github` as a folder); default behavior copies contents only. |
 | Template rendering (Jinja2) | Implemented | StrictUndefined to detect missing placeholders |
 | Dry-run and force behavior | Implemented | `would-render` / `would-copy` / `would-remove` statuses reported |
 | User templates directory & env override | Implemented | `BLDRX_TEMPLATES_DIR` and default user dir supported |

@@ -182,21 +182,37 @@ class Engine:
                 target.unlink()
                 yield (str(target), "removed")
 
-    def install_user_template(self, src_path: Path, name: str = None, force: bool = False):
-        """Copy a template folder into the user templates directory."""
+    def install_user_template(self, src_path: Path, name: str = None, force: bool = False, wrap: bool = False):
+        """Copy a template folder into the user templates directory.
+
+        If `wrap` is False (default) the contents of `src_path` are copied into `user_templates/name`.
+        If `wrap` is True the entire `src_path` folder is preserved under `user_templates/name/<src_basename>`.
+        """
         src = Path(src_path)
         if not src.exists() or not src.is_dir():
             raise FileNotFoundError(f"Source template path '{src}' not found or is not a directory")
         name = name or src.name
-        dest = self.user_templates_root / name
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        if dest.exists() and not force:
+        base_dest = self.user_templates_root / name
+        base_dest.parent.mkdir(parents=True, exist_ok=True)
+        if base_dest.exists() and not force:
             raise FileExistsError(f"Template '{name}' already exists in user templates; use force=True to overwrite")
         # remove existing if force
-        if dest.exists() and force:
-            shutil.rmtree(dest)
-        shutil.copytree(src, dest)
-        return dest
+        if base_dest.exists() and force:
+            shutil.rmtree(base_dest)
+        if wrap:
+            dest = base_dest / src.name
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copytree(src, dest)
+        else:
+            # copy contents of src into base_dest
+            base_dest.mkdir(parents=True, exist_ok=True)
+            for p in src.iterdir():
+                target = base_dest / p.name
+                if p.is_dir():
+                    shutil.copytree(p, target)
+                else:
+                    shutil.copy2(p, target)
+        return base_dest
 
     def uninstall_user_template(self, name: str, force: bool = False):
         dest = self.user_templates_root / name

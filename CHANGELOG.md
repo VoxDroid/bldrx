@@ -22,6 +22,7 @@ All notable changes to this project are documented in this file.
   - Built and validated wheel locally.
   - Added GitHub Actions workflow to run tests on push/PR and fixed artifact uploads.
   - Fix applied: make artifact names unique per job/run and add `build-artifacts` job to build and upload distributions on tag pushes.
+- Added `--wrap` option to `install-template` to allow preserving the source top-level folder when installing templates (useful for `.github` directories); default installs contents-only.
 
 ---
 

@@ -1,0 +1,86 @@
+name: Publish to PyPI
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+jobs:
+  check:
+    name: Check commit message vs package version
+    runs-on: ubuntu-latest
+    outputs:
+      publish: ${{ steps.check.outputs.publish }}
+      version: ${{ steps.check.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get package version
+        id: get_version
+        shell: bash
+        run: |
+          version=$(python -c "import re,sys;print(re.search(r'(?m)^\\s*version\\s*=\\s*\"([^\"]+)\"', open('pyproject.toml').read()).group(1))")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Get latest commit message
+        id: get_message
+        shell: bash
+        run: |
+          commit_message="$(git log -1 --pretty=%B | tr -d '\r')"
+          echo "commit_message=$commit_message" >> "$GITHUB_OUTPUT"
+
+      - name: Decide whether to publish
+        id: decide
+        shell: bash
+        run: |
+          version="${{ steps.get_version.outputs.version }}"
+          commit_message="${{ steps.get_message.outputs.commit_message }}"
+          if [[ "v$version" == "$commit_message" ]]; then
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  build-and-publish:
+    name: Build and publish to PyPI
+    needs: check
+    if: needs.check.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install build tooling
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade build twine
+
+      - name: Build distributions
+        run: |
+          python -m build --sdist --wheel
+
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          python -m twine upload --non-interactive dist/*
+
+      - name: Create GitHub Release (optional)
+        if: ${{ github.event_name == 'push' }}
+        uses: ncipollo/release-action@v1
+        with:
+          tag: v${{ needs.check.outputs.version }}
+          name: Release v${{ needs.check.outputs.version }}
+          body: "Automated release for v${{ needs.check.outputs.version }}"
+          draft: false
+          prerelease: false

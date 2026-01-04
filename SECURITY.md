@@ -6,7 +6,7 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in KemonoDownloader, we encourage responsible disclosure to protect our users. We take security seriously and appreciate your help in keeping the project safe.
+If you discover a security vulnerability in `bldrx`, we encourage responsible disclosure to protect our users. We take security seriously and appreciate your help in keeping the project safe.
 
 ### How to Report
 - **Preferred Method**: Email the maintainers at [izeno.contact@gmail.com](mailto:izeno.contact@gmail.com) with a detailed description of the vulnerability. Please include:
@@ -27,7 +27,7 @@ If you discover a security vulnerability in KemonoDownloader, we encourage respo
 ### Guidelines
 - **Responsible Disclosure**: Do not publicly share details of the vulnerability until we have addressed it.
 - **No Exploitation**: Avoid exploiting vulnerabilities in ways that harm users, creators, or the project (e.g., unauthorized data access or disruption).
-- **Ethical Use**: Respect the intellectual property rights of creators and adhere to the terms of service of Kemono.cr and related platforms (e.g., Patreon, Pixiv Fanbox), as outlined in our [README](README.md).
+- **Ethical Use**: Respect intellectual property rights and avoid adding templates or tooling that facilitate illegal activity or violate platform terms; consult the project README for guidance.
 - **Follow Community Standards**: Adhere to our [Contributing Guidelines](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md). Do not include unverified links or promotional content in reports, as they will be considered spam and may lead to restrictions.
 
 ## Security Best Practices

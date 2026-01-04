@@ -96,7 +96,7 @@ Before starting work, check the [Issues page](https://github.com/VoxDroid/bldrx/
 - Avoid hardcoding values; use constants or configuration files where appropriate.
 
 ## Reporting Bugs
-If you find a bug but aren’t ready to fix it, open an issue using the [Bug Report template](.github/ISSUE_TEMPLATE/bug_report.yml) on the [Issues page](https://github.com/VoxDroid/KemonoDownloader/issues) with:
+If you find a bug but aren’t ready to fix it, open an issue using the [Bug Report template](.github/ISSUE_TEMPLATE/bug_report.yml) on the [Issues page](https://github.com/VoxDroid/bldrx/issues) with:
 - A clear description of the bug.
 - Steps to reproduce the issue.
 - Expected behavior vs. actual behavior.
@@ -116,6 +116,6 @@ If you discover a security vulnerability, please follow our [Security Policy](SE
 - Opening a private issue labeled "Security Violation" for sensitive matters.
 
 ## Getting Help
-If you need help with contributing, check the [Support page](SUPPORT.md) for resources or ask a question in the [Discussions tab](https://github.com/VoxDroid/KemonoDownloader/discussions).
+If you need help with contributing, check the [Support page](SUPPORT.md) for resources or ask a question in the [Discussions tab](https://github.com/VoxDroid/bldrx/discussions).
 
-Thank you for contributing to KemonoDownloader!
+Thank you for contributing to bldrx!

@@ -11,8 +11,8 @@ See `README.md`, `docs/ADVANCED_SCENARIOS.md`, and other docs in the repository 
 Engage with the community on the [Discussions tab](https://github.com/VoxDroid/bldrx/discussions) to ask questions, share ideas, or seek help from other users and maintainers.
 
 ## Reporting Issues
-If you encounter a bug, have a feature suggestion, or discover a security vulnerability, please use the appropriate issue template on the [Issues page](https://github.com/VoxDroid/KemonoDownloader/issues):
-- **Bugs**: Use the [Bug Report template](.github/ISSUE_TEMPLATE/bug_report.yml). Include a clear description, steps to reproduce, expected vs. actual behavior, screenshots/logs, and your environment details (OS, Python version, KemonoDownloader version).
+If you encounter a bug, have a feature suggestion, or discover a security vulnerability, please use the appropriate issue template on the [Issues page](https://github.com/VoxDroid/bldrx/issues):
+- **Bugs**: Use the [Bug Report template](.github/ISSUE_TEMPLATE/bug_report.yml). Include a clear description, steps to reproduce, expected vs. actual behavior, screenshots/logs, and your environment details (OS, Python version, `bldrx` version).
 - **Features**: Use the [Feature Request template](.github/ISSUE_TEMPLATE/feature_request.yml). Describe the feature, its use case, and any challenges.
 - **Support Questions**: Use the [Support Question template](.github/ISSUE_TEMPLATE/support_question.yml) for usage or configuration help.
 - **Documentation**: Use the [Documentation Issue template](.github/ISSUE_TEMPLATE/documentation_issue.yml) for documentation errors or improvements.

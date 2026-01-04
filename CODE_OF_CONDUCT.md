@@ -23,7 +23,7 @@ Examples of unacceptable behavior include:
 - Public or private harassment.
 - Publishing others' private information, such as physical or email addresses, without their explicit permission ("doxing").
 - Engaging in or promoting illegal activities, including the unauthorized distribution of copyrighted material.
-- Using KemonoDownloader to download or distribute content in violation of copyright laws or the terms of service of platforms like Patreon, Pixiv Fanbox, or Gumroad.
+- Using any tooling to download or distribute content in violation of copyright laws or the terms of service of platforms.
 - Sharing unverified links or promotional content, as outlined in our [Contributing Guidelines](CONTRIBUTING.md).
 - Publicly disclosing security vulnerabilities without coordination, as outlined in our [Security Policy](SECURITY.md).
 - Other conduct which could reasonably be considered inappropriate in a professional setting.

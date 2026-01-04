@@ -53,7 +53,7 @@ bldrx preview-template python-cli --file README.md.j2
 bldrx preview-template python-cli --file README.md.j2 --render --meta project_name=demo
 ```
 
-For full usage and prototyping notes, see `PROJECT_OUTLINE.md` and `BUILD_INSTRUCTIONS.md`.
+For full usage and prototyping notes, see `PROJECT_OUTLINE.md`, `BUILD_INSTRUCTIONS.md`, and the advanced guide at `docs/ADVANCED_SCENARIOS.md`.
 
 ## Configuration
 
@@ -175,6 +175,22 @@ bldrx catalog info cool
 # remove an entry
 bldrx catalog remove cool --yes
 ```
+
+Telemetry (opt-in)
+
+- Telemetry is strictly opt-in. You can enable it via environment or CLI:
+
+```bash
+# enable in current session
+export BLDRX_ENABLE_TELEMETRY=1
+# or CLI
+bldrx telemetry enable
+
+# check status
+bldrx telemetry status
+```
+
+- By default telemetry writes newline-delimited JSON events to `~/.bldrx/telemetry.log`. You can override the endpoint for external collection with `BLDRX_TELEMETRY_ENDPOINT` (not enabled by default). All telemetry is best-effort and non-blocking; failures are ignored and events are local first.
 
 Remote fetching (local archives, HTTP, Git)
 

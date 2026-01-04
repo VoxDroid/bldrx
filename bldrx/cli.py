@@ -241,6 +241,33 @@ def plugin_group():
     pass
 
 
+@cli.group('telemetry')
+def telemetry_group():
+    """Telemetry opt-in controls"""
+    pass
+
+
+@telemetry_group.command('enable')
+def telemetry_enable():
+    from .telemetry import enable
+    enable()
+    click.echo('Telemetry enabled (BLDRX_ENABLE_TELEMETRY=1)')
+
+
+@telemetry_group.command('disable')
+def telemetry_disable():
+    from .telemetry import disable
+    disable()
+    click.echo('Telemetry disabled')
+
+
+@telemetry_group.command('status')
+def telemetry_status():
+    from .telemetry import status
+    import json
+    click.echo(json.dumps(status(), indent=2))
+
+
 @plugin_group.command('install')
 @click.argument('src_path')
 @click.option('--name', default=None, help='Optional name to install the plugin as')

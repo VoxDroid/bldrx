@@ -33,6 +33,23 @@ jobs:
           name: pytest-logs-${{ matrix.python-version }}-${{ github.run_id }}
           path: ./
 
+  validate-templates:
+    name: Validate templates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run template validation
+        run: |
+          python scripts/ci_validate_templates.py
+
   build-artifacts:
     name: Build distributions (on tags)
     if: startsWith(github.ref, 'refs/tags/')

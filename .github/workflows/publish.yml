@@ -15,8 +15,8 @@ jobs:
     name: Check commit message vs package version
     runs-on: ubuntu-latest
     outputs:
-      publish: ${{ steps.check.outputs.publish }}
-      version: ${{ steps.check.outputs.version }}
+      publish: ${{ steps.decide.outputs.publish }}
+      version: ${{ steps.get_version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
 
@@ -46,6 +46,14 @@ jobs:
           else
             echo "publish=false" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Debug: show decision
+        if: always()
+        shell: bash
+        run: |
+          echo "version='${{ steps.get_version.outputs.version }}'"
+          echo "commit_message='${{ steps.get_message.outputs.commit_message }}'"
+          echo "publish='${{ steps.decide.outputs.publish }}'"
 
   build-and-publish:
     name: Build and publish to PyPI

@@ -40,10 +40,31 @@ def main():
                     errors.append((name, 'syntax', res['syntax_errors']))
                 undef = {p:v for p,v in (res.get('undefined_variables') or {}).items() if v}
                 if undef:
-                    if strict:
-                        errors.append((name, 'undefined_variables', undef))
-                    else:
-                        warnings.append((name, 'undefined_variables', undef))
+                    # If a per-template CI metadata file exists (ci_metadata.json), try rendering
+                    # templates with that metadata to resolve undefined vars used only at render time.
+                    md_path = tpl / 'ci_metadata.json'
+                    if md_path.exists():
+                        try:
+                            import json
+                            metadata = json.loads(md_path.read_text(encoding='utf-8'))
+                        except Exception:
+                            metadata = {}
+                        render_ok = True
+                        for rel_path in undef.keys():
+                            try:
+                                # engine.render_template_file will raise if a variable is still undefined
+                                engine.render_template_file(name, rel_path, metadata, templates_dir=root)
+                            except Exception:
+                                render_ok = False
+                                break
+                        if render_ok:
+                            # metadata satisfied all undefined variables for this template
+                            undef = {}
+                    if undef:
+                        if strict:
+                            errors.append((name, 'undefined_variables', undef))
+                        else:
+                            warnings.append((name, 'undefined_variables', undef))
                 # if manifest exists, verify
                 vres = engine.verify_template(name, templates_dir=root)
                 if not vres.get('ok'):

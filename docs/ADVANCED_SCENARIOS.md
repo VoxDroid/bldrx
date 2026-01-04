@@ -25,6 +25,7 @@ This document explains advanced workflows and recommendations for template autho
 - `Engine.fetch_remote_template(url)` supports `file://`, HTTP(S) downloads, and `git+` or git remote URLs.
 - Archives are extracted in a sandbox and checked to avoid path traversal. After extraction, if `bldrx-manifest.json` is present, verification is performed (if requested).
 - Always use `--verify` or require manifests for production flows.
+- CI validation strictness: by default the CI validation script (`scripts/ci_validate_templates.py`) treats Jinja undefined variables as **warnings** (helps avoid false positives when templates intentionally rely on user metadata). To make CI fail on undefined variables, set the environment variable `BLDRX_VALIDATE_FAIL_ON_UNDEFINED=1` in the workflow or job.
 
 ## CI Integration
 

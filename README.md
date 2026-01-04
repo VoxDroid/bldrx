@@ -148,10 +148,21 @@ Security & integrity
 - Templates may include a `bldrx-manifest.json` describing per-file SHA256 checksums in a `files` mapping and an optional HMAC signature in the `hmac` field.
 - Use the `--verify` flag when applying templates (`bldrx new ... --verify` or `bldrx add-templates ... --verify`) to require manifest verification before files are applied.
 - For HMAC-protected manifests, set `BLDRX_MANIFEST_KEY` (shared secret) in the environment to validate signatures. Asymmetric signatures (public-key) are planned for a future release.
+- You can generate manifests (and optional HMAC signatures) locally using the new CLI helper:
 
-Remote fetching (local archives)
+```bash
+# create and write a manifest for a user template named `cool` (writes to template root)
+bldrx manifest create cool --sign
 
-- `Engine.fetch_remote_template(url, name, force=True)` supports local `file://` archives (`.tar.gz`, `.tgz`, `.zip`) and directories. Archives are extracted into a secure sandbox and checked for path traversal before installation. A CLI helper for remote installs (HTTP/Git) is planned.
+# generate a manifest and write it to a specific file
+bldrx manifest create cool --output /tmp/cool-manifest.json
+```
+
+Remote fetching (local archives, HTTP, Git)
+
+- `Engine.fetch_remote_template(url, name, force=True)` supports local `file://` archives (`.tar.gz`, `.tgz`, `.zip`) and directories, HTTP(S) downloads, and `git+` or Git remote URLs (shallow `git clone`).
+- Archives are extracted into a secure sandbox and checked for path traversal before installation. HTTP downloads are saved to a temporary file and then extracted; Git remotes are cloned and the repo root is used as the template source. Verification with `--verify` is applied after extraction/cloning when requested.
+- CLI helpers for `bldrx fetch` and advanced remote registry are planned (for now use `bldrx manifest create` and `Engine.fetch_remote_template`).
 
 Example (bash/macOS/Linux):
 

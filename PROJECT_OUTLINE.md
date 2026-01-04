@@ -45,6 +45,7 @@
 | Templates: node-api, react-app | Implemented | Basic skeleton templates included |
 | Safe merging (content-level merge) | Implemented | Added `--merge` strategies: `append`, `prepend`, `marker` (file markers). `patch` reserved for future work. |
 | Config files for defaults (`.bldrx` etc.) | Planned | Add user config to store defaults and metadata per user/project |
+| Template registry / manifest | In-progress | Add manifest generation, signing helpers and `bldrx manifest create` CLI; tests added, basic HMAC support implemented. |
 | Encoding & binary detection | Implemented | Detect non-UTF8 templates and large/binary files and skip with clear statuses (`would-skip-binary`, `would-skip-large`) |
 | Concurrency & locking for user templates dir | Implemented | Per-template lockfiles to serialize installs/uninstalls; Timeout and errors handled; tests added |
 | Transactional apply & atomic replace | Implemented | Per-file atomic replace using temp files in destination dir; rollback on failure; supports `--atomic` and `backup`; tests added (see `tests/test_transactional_apply.py`) |

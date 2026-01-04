@@ -234,6 +234,76 @@ def uninstall_template(name, yes):
         click.echo(str(e))
         raise SystemExit(1)
 
+
+@cli.group('plugin')
+def plugin_group():
+    """Plugin management: install/list/remove plugins"""
+    pass
+
+
+@plugin_group.command('install')
+@click.argument('src_path')
+@click.option('--name', default=None, help='Optional name to install the plugin as')
+@click.option('--force', is_flag=True, help='Overwrite existing plugin')
+def plugin_install(src_path, name, force):
+    engine = Engine()
+    try:
+        dest = engine.plugin_manager.install_plugin(Path(src_path), name=name, force=force)
+        click.echo(f"Installed plugin: {dest}")
+    except Exception as e:
+        click.echo(str(e))
+        raise SystemExit(1)
+
+
+@plugin_group.command('list')
+def plugin_list():
+    engine = Engine()
+    pls = engine.plugin_manager.list_plugins()
+    for p in pls:
+        click.echo(p)
+
+
+@plugin_group.command('remove')
+@click.argument('name')
+@click.option('--yes', is_flag=True, help='Skip confirmation')
+def plugin_remove(name, yes):
+    engine = Engine()
+    if not yes:
+        confirm = click.confirm(f"Are you sure you want to remove plugin '{name}'?")
+        if not confirm:
+            click.echo('Aborted.')
+            raise SystemExit(1)
+    try:
+        engine.plugin_manager.remove_plugin(name)
+        click.echo(f"Removed plugin: {name}")
+    except Exception as e:
+        click.echo(str(e))
+        raise SystemExit(1)
+
+
+@cli.group('manifest')
+def manifest_group():
+    """Manifest generation and registry helpers"""
+    pass
+
+
+@manifest_group.command('create')
+@click.argument('template_name')
+@click.option('--templates-dir', default=None, help='Optional templates root to use for this command')
+@click.option('--output', default=None, help='Path to write manifest (defaults to template root `bldrx-manifest.json`)')
+@click.option('--sign', 'do_sign', is_flag=True, help='Include HMAC-SHA256 signature using BLDRX_MANIFEST_KEY or provided --key')
+@click.option('--key', default=None, help='Explicit HMAC key to use for signing')
+def manifest_create(template_name, templates_dir, output, do_sign, key):
+    """Create a `bldrx-manifest.json` for the given template"""
+    engine = Engine()
+    try:
+        manifest = engine.generate_manifest(template_name, templates_dir=templates_dir, write=bool(output is None), out_path=Path(output) if output else None, sign=do_sign, key=key)
+        click.echo('Manifest generated:')
+        click.echo(json.dumps(manifest, indent=2))
+    except Exception as e:
+        click.echo(str(e))
+        raise SystemExit(1)
+
 @cli.command('preview-template')
 @click.argument('template_name')
 @click.option('--file', 'file_path', default=None, help='Relative template file path to preview (e.g., README.md.j2)')
@@ -242,12 +312,14 @@ def uninstall_template(name, yes):
 @click.option('--json', 'as_json', is_flag=True, help='Output machine-readable JSON for automation')
 @click.option('--meta', multiple=True, help='Metadata KEY=VAL to use when rendering')
 @click.option('--templates-dir', default=None, help='Optional templates root to use for this command')
-def preview_template(template_name, file_path, do_render, show_diff, as_json, meta, templates_dir):
+@click.option('--templates-root', default=None, help='(deprecated) alias for --templates-dir')
+def preview_template(template_name, file_path, do_render, show_diff, as_json, meta, templates_dir, templates_root):
     """Preview template file contents or rendered output"""
     engine = Engine()
     # allow overriding templates dir for this command
-    if templates_dir:
-        engine = Engine(user_templates_root=templates_dir)
+    td = templates_dir or templates_root
+    if td:
+        engine = Engine(user_templates_root=td)
     try:
         metadata = {}
         for item in meta:
@@ -256,7 +328,7 @@ def preview_template(template_name, file_path, do_render, show_diff, as_json, me
                 metadata[k.strip()] = v.strip()
         if do_render and show_diff:
             # show diffs for the target project root (default: current dir)
-            preview = engine.preview_template(template_name, Path('.'), metadata, templates_dir=templates_dir, diff=True)
+            preview = engine.preview_template(template_name, Path('.'), metadata, templates_dir=td, diff=True)
             if as_json:
                 import json
                 click.echo(json.dumps(preview))

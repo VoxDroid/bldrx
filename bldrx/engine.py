@@ -16,7 +16,7 @@ def _default_user_templates_dir() -> Path:
 
 
 class Engine:
-    def __init__(self, templates_root: Path = None, user_templates_root: Path = None):
+    def __init__(self, templates_root: Path = None, user_templates_root: Path = None, user_plugins_root: Path = None):
         # packaged templates root (inside the package)
         self.package_templates_root = templates_root or (Path(__file__).parent / "templates")
         # user templates root (outside the package)
@@ -28,8 +28,27 @@ class Engine:
         else:
             self.user_templates_root = _default_user_templates_dir()
 
+        # plugin directory
+        env_plugins = os.getenv('BLDRX_PLUGINS_DIR')
+        if user_plugins_root:
+            self.user_plugins_root = Path(user_plugins_root)
+        elif env_plugins:
+            self.user_plugins_root = Path(env_plugins)
+        else:
+            # avoid NameError by importing the helper from plugins module
+            from .plugins import _default_user_plugins_dir
+            self.user_plugins_root = _default_user_plugins_dir()
+
         # Ensure user templates dir exists (but do NOT create it by default). It will be created on install-template.
         self.renderer = Renderer([str(self.user_templates_root), str(self.package_templates_root)])
+        # plugin manager (loads plugins)
+        from .plugins import PluginManager
+        self.plugin_manager = PluginManager(self, plugins_root=self.user_plugins_root)
+        # attempt to load any installed plugins
+        try:
+            self.plugin_manager.load_plugins()
+        except Exception:
+            pass
         # backwards-compatible alias for older code/tests
         self.templates_root = self.package_templates_root
 
@@ -208,6 +227,42 @@ class Engine:
         for path, status in self.apply_template(template_name, dest, metadata, force=force, dry_run=True, templates_dir=templates_dir):
             out.append({'path': path, 'action': status})
         return out
+
+    def generate_manifest(self, template_name: str, templates_dir: Path = None, write: bool = False, out_path: Path = None, sign: bool = False, key: str = None):
+        """Generate a `bldrx-manifest.json` for a template.
+
+        Parameters:
+        - template_name: name of the template (resolved via the same _find_template_src rules)
+        - templates_dir: optional override for template source
+        - write: if True, write the manifest file into the template root (or to `out_path` if provided)
+        - out_path: explicit file path to write the manifest to
+        - sign: if True, include an HMAC-SHA256 signature under the 'hmac' key
+        - key: explicit HMAC key to use (falls back to `BLDRX_MANIFEST_KEY` env var if not provided)
+
+        Returns: manifest dict
+        """
+        import json, hashlib, hmac, os
+        src = self._find_template_src(template_name, templates_dir)
+        files = {}
+        for p in src.rglob("*"):
+            if p.is_dir():
+                continue
+            rel = str(p.relative_to(src)).replace('\\', '/')
+            h = hashlib.sha256()
+            h.update(p.read_bytes())
+            files[rel] = h.hexdigest()
+        manifest = {'files': files}
+        if sign:
+            use_key = key or os.getenv('BLDRX_MANIFEST_KEY')
+            if not use_key:
+                raise RuntimeError('Signing requested but no key provided via `key` param or BLDRX_MANIFEST_KEY env var')
+            canonical = json.dumps({'files': files}, sort_keys=True, separators=(',', ':')).encode('utf-8')
+            manifest['hmac'] = hmac.new(use_key.encode('utf-8'), canonical, hashlib.sha256).hexdigest()
+        if write:
+            target = Path(out_path) if out_path else (src / 'bldrx-manifest.json')
+            target.write_text(json.dumps(manifest, indent=2), encoding='utf-8')
+            return manifest
+        return manifest
 
     def verify_template(self, template_name: str, templates_dir: Path = None):
         """Verify template integrity based on a manifest file `bldrx-manifest.json`.
@@ -649,6 +704,21 @@ class Engine:
             import urllib.request
             pathstr = urllib.request.url2pathname(parsed.path)
             src_path = Path(pathstr)
+        elif parsed.scheme in ('http', 'https'):
+            # download to temp file
+            import urllib.request
+            tmpf = tdpath / 'downloaded'
+            urllib.request.urlretrieve(url, str(tmpf))
+            src_path = tmpf
+        elif parsed.scheme.startswith('git') or url.startswith('git+') or parsed.path.endswith('.git'):
+            # perform a shallow git clone into the temp dir
+            git_url = url
+            if url.startswith('git+'):
+                git_url = url.split('git+', 1)[1]
+            import subprocess
+            clone_dir = tdpath / 'repo'
+            subprocess.run(['git', 'clone', '--depth', '1', git_url, str(clone_dir)], check=True)
+            src_path = clone_dir
         else:
             # treat as local path fallback for now
             p = Path(url)

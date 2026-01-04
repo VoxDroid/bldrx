@@ -1,0 +1,103 @@
+from pathlib import Path
+import shutil
+import importlib.util
+
+
+def _default_user_plugins_dir():
+    import os
+    if os.name == 'nt':
+        appdata = os.getenv('APPDATA') or Path.home()
+        return Path(appdata) / 'bldrx' / 'plugins'
+    else:
+        return Path.home() / '.bldrx' / 'plugins'
+
+
+class PluginManager:
+    def __init__(self, engine, plugins_root: Path = None):
+        self.engine = engine
+        self.plugins_root = Path(plugins_root) if plugins_root else _default_user_plugins_dir()
+        self.plugins_root.mkdir(parents=True, exist_ok=True)
+
+    def list_plugins(self):
+        out = []
+        for p in self.plugins_root.iterdir():
+            if p.is_dir():
+                out.append(p.name)
+            elif p.suffix == '.py':
+                out.append(p.stem)
+            else:
+                out.append(p.name)
+        return sorted(out)
+
+    def install_plugin(self, src_path: Path, name: str = None, force: bool = False):
+        src = Path(src_path)
+        if not src.exists():
+            raise FileNotFoundError(f"Plugin source '{src}' not found")
+        name = name or src.name
+        dest = self.plugins_root / name
+        if dest.exists() and not force:
+            raise FileExistsError(f"Plugin '{name}' already exists; use force=True to overwrite")
+        if dest.exists() and force:
+            if dest.is_dir():
+                shutil.rmtree(dest)
+            else:
+                dest.unlink()
+        if src.is_dir():
+            shutil.copytree(src, dest)
+        else:
+            # copy single file and preserve extension
+            dest_name = dest.name
+            if not dest_name.endswith('.py') and src.suffix:
+                dest = dest.with_name(dest_name + src.suffix)
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dest)
+        return dest
+
+    def remove_plugin(self, name: str):
+        # support removing by name without extension or directory name
+        dest = self.plugins_root / name
+        if not dest.exists():
+            # try .py extension
+            py_candidate = self.plugins_root / (name + '.py')
+            if py_candidate.exists():
+                dest = py_candidate
+            else:
+                # try as directory
+                dir_candidate = self.plugins_root / name
+                if dir_candidate.exists():
+                    dest = dir_candidate
+                else:
+                    raise FileNotFoundError(f"Plugin '{name}' not found")
+        if dest.is_dir():
+            shutil.rmtree(dest)
+        else:
+            dest.unlink()
+        return True
+
+    def load_plugins(self):
+        # load plugin modules by file path
+        for p in sorted(self.plugins_root.iterdir()):
+            try:
+                if p.is_dir():
+                    # look for __init__.py or plugin.py
+                    candidates = [p / '__init__.py', p / 'plugin.py']
+                    mod_file = None
+                    for c in candidates:
+                        if c.exists():
+                            mod_file = c
+                            break
+                    if not mod_file:
+                        continue
+                else:
+                    mod_file = p
+                spec = importlib.util.spec_from_file_location(f"bldrx_plugin.{p.stem}", str(mod_file))
+                mod = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(mod)
+                if hasattr(mod, 'register'):
+                    try:
+                        mod.register(self.engine)
+                    except Exception:
+                        # do not allow a single plugin to crash engine load
+                        continue
+            except Exception:
+                continue

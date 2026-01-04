@@ -54,6 +54,40 @@
 - Priorities: add content-merge strategies, plugin/remote template fetching, config file support.
 - This outline documents the current implementation and planned improvements; use `README.md` for quickstart and user documentation.
 
+---
+
+## Top priorities (High impact, small→medium effort) ✅
+
+These are the next features we will implement, prioritized for impact and feasibility. Each entry includes a short acceptance criteria and testing notes so we can proceed TDD-style.
+
+1. Safe backups & Git integration (High priority, small effort)
+   - Goal: Before modifying files, create a reversible backup (on-disk snapshot) and optionally create a git commit for the injected changes.
+   - Acceptance criteria:
+     - `Engine.apply_template(..., backup=True)` creates a `./.bldrx/backups/<timestamp>/` snapshot of overwritten files.
+     - `Engine.apply_template(..., git_commit=True, git_message=<msg>)` commits the changes into the repo in `dest` with the provided message.
+     - Tests: unit tests that validate backup files and git commit message.
+
+2. Show diffs / patch preview (small)
+   - Goal: On `--dry-run` or `preview`, show unified diffs of what would change.
+   - Acceptance criteria:
+     - `preview-template --render --diff` prints unified diff to stdout.
+     - `engine.render_preview(..., diff=True)` returns a diff string.
+     - Tests: snapshot tests asserting expected diff output for a small template change.
+
+3. Template validator / linter (small)
+   - Goal: Validate `.j2` syntax and warn about unresolved variables before apply.
+   - Acceptance criteria:
+     - `Engine.validate_template(src)` detects Jinja syntax errors and missing placeholders (configurable required placeholders).
+     - Tests: unit tests that feed a broken template and assert validation errors.
+
+4. Improve preview & dry-run UX (small)
+   - Goal: Make `--dry-run` verbose by default and add `--json` output for automation.
+   - Acceptance criteria:
+     - `engine.apply_template(..., dry_run=True)` returns structured actions; `--json` flag prints machine-readable output.
+     - Tests: validate machine-readable (JSON) dry-run output structure and values.
+
+(Other planned items will be added below in order of priority.)
+
 ## Notes
 
 This file is a project outline and prototype documentation. For the canonical user-facing documentation and quickstart, see `README.md`.

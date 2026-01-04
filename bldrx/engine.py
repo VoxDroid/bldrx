@@ -106,9 +106,27 @@ class Engine:
         else:
             return target.read_text(encoding='utf-8')
 
-    def apply_template(self, template_name: str, dest: Path, metadata: dict, force: bool = False, dry_run: bool = False, templates_dir: Path = None):
+    def apply_template(self, template_name: str, dest: Path, metadata: dict, force: bool = False, dry_run: bool = False, templates_dir: Path = None, backup: bool = False, git_commit: bool = False, git_message: str = None):
+        """Apply the named template into `dest`.
+
+        New options:
+        - backup: if True, save overwritten files into `dest/.bldrx/backups/<timestamp>/...` before writing.
+        - git_commit: if True and `dest` is a git repo, stage & commit changes after apply with `git_message`.
+        """
+        import subprocess
+
         src = self._find_template_src(template_name, templates_dir)
         dest.mkdir(parents=True, exist_ok=True)
+
+        # prepare backups root if requested
+        backups_root = None
+        if backup:
+            ts = datetime.now().strftime("%Y%m%d%H%M%S")
+            backups_root = dest / ".bldrx" / "backups" / f"{template_name}-{ts}"
+            backups_root.mkdir(parents=True, exist_ok=True)
+
+        made_changes = False
+
         # Walk files
         for p in src.rglob("*"):
             rel = p.relative_to(src)
@@ -132,8 +150,14 @@ class Engine:
                 if dry_run:
                     yield (str(out_path), "would-render")
                     continue
+                # backup existing
+                if out_path.exists() and backup:
+                    bpath = backups_root / out_path.relative_to(dest)
+                    bpath.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(out_path, bpath)
                 out_path.parent.mkdir(parents=True, exist_ok=True)
                 out_path.write_text(text, encoding="utf-8")
+                made_changes = True
                 yield (str(out_path), "rendered")
             else:
                 # raw file
@@ -143,9 +167,30 @@ class Engine:
                 if dry_run:
                     yield (str(target), "would-copy")
                     continue
+                # backup existing
+                if target.exists() and backup:
+                    bpath = backups_root / target.relative_to(dest)
+                    bpath.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(target, bpath)
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(p, target)
+                made_changes = True
                 yield (str(target), "copied")
+
+        # After all files applied, optionally commit to git
+        if git_commit and made_changes:
+            # Only attempt to commit if this appears to be a git repo
+            git_dir = Path(dest) / ".git"
+            if git_dir.exists():
+                try:
+                    subprocess.run(["git", "add", "-A"], cwd=str(dest), check=True, capture_output=True)
+                    msg = git_message or f"bldrx: apply template {template_name}"
+                    subprocess.run(["git", "commit", "-m", msg], cwd=str(dest), check=True, capture_output=True)
+                except subprocess.CalledProcessError as e:
+                    # surface a helpful error
+                    raise RuntimeError(f"git commit failed: {e.stderr.decode() if hasattr(e, 'stderr') else e}")
+            else:
+                raise RuntimeError("git_commit requested but destination is not a git repository")
 
     def remove_template(self, template_name: str, dest: Path, force: bool = False, dry_run: bool = False, templates_dir: Path = None):
         """Remove files from dest that correspond to files in the template.

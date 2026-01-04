@@ -19,8 +19,10 @@ def cli():
 @click.option('--dry-run', 'dry_run', is_flag=True, help='Show planned actions but do not write files')
 @click.option('--json', 'as_json', is_flag=True, help='Output machine-readable JSON when used with --dry-run')
 @click.option('--merge', 'merge_strategy', type=click.Choice(['append','prepend','marker','patch']), default=None, help='Merge strategy to use when target file exists')
+@click.option('--only', 'only_files', default=None, help='Comma-separated list of relative template file paths to include (default: all)')
+@click.option('--except', 'exclude_files', default=None, help='Comma-separated list of relative template file paths to exclude')
 @click.option('--verify', 'verify_integrity', is_flag=True, help='Verify template integrity using bldrx-manifest.json before applying')
-def new(project_name, templates, project_type, author, email, github_username, meta, force, dry_run, as_json, merge_strategy, verify_integrity):
+def new(project_name, templates, project_type, author, email, github_username, meta, force, dry_run, as_json, merge_strategy, only_files, exclude_files, verify_integrity):
     """Scaffold a new project"""
     engine = Engine()
     dest = Path(project_name)
@@ -54,15 +56,23 @@ def new(project_name, templates, project_type, author, email, github_username, m
             k, v = item.split('=', 1)
             metadata[k.strip()] = v.strip()
     all_actions = []
+    # parse only/exclude lists
+    def _parse_csv(s):
+        if not s:
+            return None
+        return [p.strip().replace('\\', '/') for p in s.split(',') if p.strip()]
+    only_list = _parse_csv(only_files)
+    exclude_list = _parse_csv(exclude_files)
+
     for t in templates:
         click.echo(f"Applying template: {t}")
         if dry_run and as_json:
-            preview = engine.preview_apply(t, dest, metadata, force=force)
+            preview = engine.preview_apply(t, dest, metadata, force=force, templates_dir=None)
             all_actions.extend(preview)
             for e in preview:
                 click.echo(f"  {e['action']}: {e['path']}")
         else:
-            for path, status in engine.apply_template(t, dest, metadata, force=force, dry_run=dry_run, atomic=True, merge=merge_strategy, verify=verify_integrity):
+            for path, status in engine.apply_template(t, dest, metadata, force=force, dry_run=dry_run, atomic=True, merge=merge_strategy, verify=verify_integrity, only_files=only_list, except_files=exclude_list):
                 click.echo(f"  {status}: {path}")
     if dry_run and as_json:
         import json
@@ -109,8 +119,10 @@ def list_templates(as_json, templates_dir, details):
 @click.option('--dry-run', 'dry_run', is_flag=True, help='Show planned actions but do not write files')
 @click.option('--json', 'as_json', is_flag=True, help='Output machine-readable JSON when used with --dry-run')
 @click.option('--merge', 'merge_strategy', type=click.Choice(['append','prepend','marker','patch']), default=None, help='Merge strategy to use when target file exists')
+@click.option('--only', 'only_files', default=None, help='Comma-separated list of relative template file paths to include (default: all)')
+@click.option('--except', 'exclude_files', default=None, help='Comma-separated list of relative template file paths to exclude')
 @click.option('--verify', 'verify_integrity', is_flag=True, help='Verify template integrity using bldrx-manifest.json before applying')
-def add_templates(project_path, templates, templates_dir, author, email, github_username, meta, force, dry_run, as_json, merge_strategy, verify_integrity):
+def add_templates(project_path, templates, templates_dir, author, email, github_username, meta, force, dry_run, as_json, merge_strategy, only_files, exclude_files, verify_integrity):
     """Inject templates into existing project"""
     engine = Engine()
     dest = Path(project_path)
@@ -137,6 +149,13 @@ def add_templates(project_path, templates, templates_dir, author, email, github_
             k, v = item.split('=', 1)
             metadata[k.strip()] = v.strip()
     all_actions = []
+    def _parse_csv(s):
+        if not s:
+            return None
+        return [p.strip().replace('\\', '/') for p in s.split(',') if p.strip()]
+    only_list = _parse_csv(only_files)
+    exclude_list = _parse_csv(exclude_files)
+
     for t in templates:
         click.echo(f"Applying template: {t}")
         if dry_run and as_json:
@@ -145,7 +164,7 @@ def add_templates(project_path, templates, templates_dir, author, email, github_
             for e in preview:
                 click.echo(f"  {e['action']}: {e['path']}")
         else:
-            for path, status in engine.apply_template(t, dest, metadata, force=force, dry_run=dry_run, templates_dir=templates_dir, atomic=True, merge=merge_strategy):
+            for path, status in engine.apply_template(t, dest, metadata, force=force, dry_run=dry_run, templates_dir=templates_dir, atomic=True, merge=merge_strategy, only_files=only_list, except_files=exclude_list):
                 click.echo(f"  {status}: {path}")
     if dry_run and as_json:
         import json
@@ -417,7 +436,9 @@ def catalog_remove(name, version, yes):
 @click.option('--meta', multiple=True, help='Metadata KEY=VAL to use when rendering')
 @click.option('--templates-dir', default=None, help='Optional templates root to use for this command')
 @click.option('--templates-root', default=None, help='(deprecated) alias for --templates-dir')
-def preview_template(template_name, file_path, do_render, show_diff, as_json, meta, templates_dir, templates_root):
+@click.option('--only', 'only_files', default=None, help='Comma-separated list of relative template file paths to include (default: all)')
+@click.option('--except', 'exclude_files', default=None, help='Comma-separated list of relative template file paths to exclude')
+def preview_template(template_name, file_path, do_render, show_diff, as_json, meta, templates_dir, templates_root, only_files, exclude_files):
     """Preview template file contents or rendered output"""
     engine = Engine()
     # allow overriding templates dir for this command
@@ -430,17 +451,28 @@ def preview_template(template_name, file_path, do_render, show_diff, as_json, me
             if '=' in item:
                 k, v = item.split('=', 1)
                 metadata[k.strip()] = v.strip()
+        def _parse_csv(s):
+            if not s:
+                return None
+            return [p.strip().replace('\\', '/') for p in s.split(',') if p.strip()]
+        only_list = _parse_csv(only_files)
+        exclude_list = _parse_csv(exclude_files)
+
         if do_render and show_diff:
             # show diffs for the target project root (default: current dir)
-            preview = engine.preview_template(template_name, Path('.'), metadata, templates_dir=td, diff=True)
+            # Use apply_template with dry_run to respect filters (only/except)
+            preview = list(engine.apply_template(template_name, Path('.'), metadata, force=False, dry_run=True, templates_dir=td, atomic=False, merge=None, only_files=only_list, except_files=exclude_list))
             if as_json:
                 import json
-                click.echo(json.dumps(preview))
+                # convert to preview style
+                out = []
+                for p, status in preview:
+                    entry = {'path': p, 'action': status}
+                    out.append(entry)
+                click.echo(json.dumps(out))
             else:
-                for e in preview:
-                    click.echo(f"{e['action']}: {e['path']}")
-                    if 'diff' in e:
-                        click.echo(e['diff'])
+                for p, status in preview:
+                    click.echo(f"{status}: {p}")
             return
         if not file_path:
             files = engine.get_template_files(template_name, templates_dir=templates_dir)

@@ -34,31 +34,74 @@ bldrx --help
 bldrx <command> --help
 ```
 
+## Examples
 
-## Quick examples
-
-List available templates (human- and machine-readable):
+1) Scaffold a new project (basic):
 
 ```bash
-bldrx list-templates
-bldrx list-templates --json
-bldrx list-templates --details   # show files contained in each template
+# scaffold a new python-cli project with author metadata (dry-run first)
+bldrx new mytool --type python-cli --author "Your Name" --email you@example.com --dry-run
 ```
 
-Install a user template and list templates:
+2) Scaffold and include specific templates (only some files):
 
 ```bash
-bldrx install-template /path/to/local-template --name cool --wrap
-bldrx list-templates
+# apply the 'python-cli' template but only include README.md and LICENSE
+bldrx new mytool --type python-cli --templates python-cli --only README.md,LICENSE
+
+# exclude a file from the template
+bldrx new mytool --type python-cli --templates python-cli --except docs/EXAMPLE.md
 ```
 
-Preview a template file or its rendered output:
+3) Inject templates into an existing project (preview, dry-run and diff):
 
 ```bash
-bldrx preview-template python-cli                  # list template files
-bldrx preview-template python-cli --file README.md.j2
+# preview what would change when adding 'contributing' and 'ci' templates
+bldrx add-templates ./existing-repo --templates contributing,ci --dry-run --json
+
+# show rendered diffs against the current project (respect filters)
+bldrx preview-template contributing --render --diff --meta project_name=demo --only CONTRIBUTING.md
+```
+
+4) Inspect and render template files:
+
+```bash
+# list files in template
+bldrx preview-template python-cli
+
+# render a single file with metadata
 bldrx preview-template python-cli --file README.md.j2 --render --meta project_name=demo
-bldrx preview-template python-cli --render --diff --meta project_name=demo
+```
+
+5) Manage user templates:
+
+```bash
+# install a local template into your user templates dir
+bldrx install-template /path/to/local-template --name cool --wrap
+
+# uninstall it
+bldrx uninstall-template cool --yes
+```
+
+6) Manifests & verification (provenance):
+
+```bash
+# create a manifest for a template and sign it (requires BLDRX_MANIFEST_KEY)
+bldrx manifest create cool --sign
+
+# when applying, ensure verification (fail if mismatches/signature invalid)
+bldrx add-templates ./repo --templates cool --verify
+```
+
+7) Publish & discover via local catalog:
+
+```bash
+# publish a template entry into your local catalog (json metadata)
+bldrx catalog publish ./my-template --name cool --version 1.0.0 --description "Cool template" --tags "ci,github"
+
+# search and inspect
+bldrx catalog search ci
+bldrx catalog info cool
 ```
 
 For full usage and prototyping notes, see `PROJECT_OUTLINE.md`, `BUILD_INSTRUCTIONS.md`, and `docs/ADVANCED_SCENARIOS.md`.
@@ -87,6 +130,24 @@ Config file (planned): support a `.bldrx` TOML/YAML file to store default metada
 
 ---
 
+## Implemented features (short checklist)
+
+- Template rendering with Jinja2 (`StrictUndefined`) and per-template defaults via `ci_metadata.json` ✅
+- Preview & diffs: `bldrx preview-template --render --diff` and JSON previews ✅
+- Dry-run and machine-readable dry-run output (`--dry-run`, `--json`) ✅
+- Template manifests & HMAC signing (`bldrx manifest create --sign`) and verification (`--verify`) ✅
+- Local catalog registry: `bldrx catalog publish/search/info/remove` ✅
+- Atomic/transactional apply, backups, and optional git commit support (`backup=True`, `git_commit=True`) ✅
+- Merge strategies (`--merge` append|prepend|marker) ✅
+- Encoding / binary detection and safe skipping ✅
+- Concurrency & install locking for user templates ✅
+- File inclusion/exclusion filters (`--only` / `--except`) ✅
+- Telemetry opt-in & CLI controls (`bldrx telemetry`) ✅
+- Plugin manager and plugin CLI (install/list/remove) ✅
+- Full test suite and CI validation workflow ✅
+
+---
+
 
 
 
@@ -96,8 +157,8 @@ Below is a comprehensive table with each command, key options, a short descripti
 
 | Command | Key options | Description | Example |
 | --- | --- | --- | --- |
-| `bldrx new <project_name>` | `--type` `--templates` `--author` `--email` `--github-username` `--meta KEY=VAL` `--dry-run` `--json` `--force` `--merge` `--verify` | Scaffold a new project from templates. `--templates` overrides type defaults. `--dry-run` shows planned actions. | `bldrx new my-tool --type python-cli --templates python-cli,ci --author "You" --dry-run` |
-| `bldrx add-templates <project_path>` | `--templates` `--templates-dir` `--author` `--email` `--github-username` `--meta` `--dry-run` `--json` `--force` `--merge` `--verify` | Inject one or more templates into an existing project. If `--templates` omitted, interactive prompt lists available templates. | `bldrx add-templates ./repo --templates contributing,ci --dry-run` |
+| `bldrx new <project_name>` | `--type` `--templates` `--author` `--email` `--github-username` `--meta KEY=VAL` `--dry-run` `--json` `--force` `--merge` `--verify` `--only` `--except` | Scaffold a new project from templates. `--templates` overrides type defaults. `--dry-run` shows planned actions. `--only`/`--except` accept comma-separated relative paths (match final rendered paths for `.j2` files). | `bldrx new my-tool --type python-cli --templates python-cli,ci --author "You" --dry-run` |
+| `bldrx add-templates <project_path>` | `--templates` `--templates-dir` `--author` `--email` `--github-username` `--meta` `--dry-run` `--json` `--force` `--merge` `--verify` `--only` `--except` | Inject one or more templates into an existing project. If `--templates` omitted, interactive prompt lists available templates. Use `--only`/`--except` to include or exclude specific template files. | `bldrx add-templates ./repo --templates contributing,ci --dry-run` |
 | `bldrx list-templates` | `--details` `--templates-dir` `--json` | List templates from built-in and user sources. `--details` shows files inside templates. | `bldrx list-templates --details` |
 | `bldrx preview-template <template>` | `--file <path>` `--render` `--diff` `--meta KEY=VAL` `--templates-dir` | Show raw template files or their rendered content. `--diff` shows patch/diff against target project when rendering. | `bldrx preview-template python-cli --file README.md.j2 --render --meta project_name=demo` |
 | `bldrx install-template <src_path>` | `--name` `--wrap` `--force` | Install a local template into the user templates directory. `--wrap` preserves the source top folder. | `bldrx install-template ./my-template --name cool` |
@@ -395,21 +456,5 @@ bldrx/
 * Auto-fetch templates from GitHub repo (planned)
 * Multi-language support (Python, Node, React) (partial support via `--type`, templates needed)
 * Interactive metadata prompts for faster scaffolding (partial — prompts for project type implemented)
-
----
-
-## **Resume Bullet Points**
-
-1. **Primary bullet:**
-
-> Developed **Bldrx**, a CLI tool for scaffolding new projects and injecting customizable templates into existing repositories, supporting GitHub meta files (CODEOWNERS, CONTRIBUTING.md, CODE_OF_CONDUCT.md, SUPPORT.md, funding.yml, issue templates), CI/CD workflows, and project structure setup.
-
-2. **Customization bullet:**
-
-> Templates are fully configurable with placeholders for project name, author, email, GitHub username, and year, allowing automated metadata injection across multiple projects.
-
-3. **Impact bullet:**
-
-> Standardized project setup and reduced manual boilerplate tasks by ~80%, enabling fast, consistent project initialization for personal and client repositories.
 
 ---

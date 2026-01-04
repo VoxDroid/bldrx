@@ -44,6 +44,8 @@
 | Templates: docker | Implemented | `Dockerfile.j2` and `.dockerignore.j2` |
 | Templates: node-api, react-app | Implemented | Basic skeleton templates included |
 | Safe merging (content-level merge) | Implemented | Added `--merge` strategies: `append`, `prepend`, `marker` (file markers). `patch` reserved for future work. |
+| File inclusion/exclusion filters (`--only` / `--except`) | Implemented | Added CLI flags and `Engine.apply_template(..., only_files=..., except_files=...)`. Matches rendered target names for `.j2` templates. |
+| Safe backups & Git integration | Implemented | `Engine.apply_template(..., backup=True)` creates backups; `git_commit=True` stages and commits changes when `dest` is a git repo. |
 | Config files for defaults (`.bldrx` etc.) | Planned | Add user config to store defaults and metadata per user/project |
 | Template registry / manifest | Implemented | Add manifest generation, signing helpers and `bldrx manifest create` CLI; tests added, HMAC support implemented. |
 | Template catalog CLI (search/info) | Implemented | `bldrx catalog publish/search/info/remove` added; simple local registry format and CLI helpers implemented. |
@@ -69,13 +71,6 @@
 
 These are the next features we will implement, prioritized for impact and feasibility. Each entry includes a short acceptance criteria and testing notes so we can proceed TDD-style.
 
-1. Safe backups & Git integration (High priority, small effort)
-   - Goal: Before modifying files, create a reversible backup (on-disk snapshot) and optionally create a git commit for the injected changes.
-   - Acceptance criteria:
-     - `Engine.apply_template(..., backup=True)` creates a `./.bldrx/backups/<timestamp>/` snapshot of overwritten files.
-     - `Engine.apply_template(..., git_commit=True, git_message=<msg>)` commits the changes into the repo in `dest` with the provided message.
-     - Tests: unit tests that validate backup files and git commit message.
-
 2. Show diffs / patch preview (Implemented)
    - Goal: On `--dry-run` or `preview`, show unified diffs of what would change.
    - Status: Implemented. See `Engine.preview_template(...)` and CLI flags `preview-template --render --diff` and `--json`.
@@ -85,6 +80,20 @@ These are the next features we will implement, prioritized for impact and feasib
      - `Engine.preview_template(..., diff=True)` returns a list of preview entries with `diff` fields when requested.
      - Tests: added `tests/test_preview_diff.py` and `tests/test_cli_preview_diff.py` validating unified diff and JSON output.
 
+3. Template validator / linter (Implemented)
+   - Goal: Validate `.j2` syntax and warn about unresolved variables before apply.
+   - Status: Implemented. `Engine.validate_template` (TDD) detects template syntax errors and reports unresolved variables; tests are included.
+   - Acceptance criteria:
+     - `Engine.validate_template(template_name)` returns a dict containing `syntax_errors` and `undefined_variables` mappings per-file.
+     - Tests: unit tests `tests/test_template_validator.py` verify detection of syntax errors, unresolved variables, and clean templates.
+
+4. Improve preview & dry-run UX (small)
+   - Goal: Make `--dry-run` verbose by default and add `--json` output for automation.
+   - Acceptance criteria:
+     - `engine.apply_template(..., dry_run=True)` returns structured actions; `--json` flag prints machine-readable output.
+     - Tests: validate machine-readable (JSON) dry-run output structure and values.
+
+(Other planned items will be added below in order of priority.)
 3. Template validator / linter (Implemented)
    - Goal: Validate `.j2` syntax and warn about unresolved variables before apply.
    - Status: Implemented. `Engine.validate_template` (TDD) detects template syntax errors and reports unresolved variables; tests are included.

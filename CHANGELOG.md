@@ -4,21 +4,35 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased — Planned improvements (Top priorities)
 
-- Safe backups & Git integration: create reversible backups before modifying files; optional `--git-commit` to create a commit with the injected template and message.
-- Template validator / linter: completed — validation and tests added to detect Jinja syntax errors and unresolved variables; CLI integration planned.
-- Improve preview & dry-run UX: completed — machine-readable `--json` dry-run output and preview diffs implemented.
-- Transactional apply & atomic replace: completed — per-file atomic replace (using temp files and `os.replace`), rollback on failure, and backup support; tests added.
-- Safe merging (merge strategies): completed — added `--merge` with `append`, `prepend`, and `marker` strategies; `patch` reserved for future work.
-- Encoding & binary detection: completed — templates that are non-UTF8 and large/binary raw files are now detected and skipped with clear statuses; tests added.
-- Concurrency & locking: implemented — per-template lockfiles prevent concurrent installs/uninstalls; supports timeouts and tests validate blocking and timeout behavior.
-- Template provenance & signatures: completed — added manifest verification support (`Engine.verify_template`) and optional HMAC-SHA256 signatures using the `BLDRX_MANIFEST_KEY` env var; `--verify` will fail on mismatches or invalid signatures (HMAC support added; asymmetric signatures planned).
-- Remote template fetching with sandbox: added `Engine.fetch_remote_template()` to fetch and extract local `file://` tar/zip archives into the user templates dir using a secure sandbox (prevents path traversal). Optionally runs manifest verification after extraction. Tests added (`tests/test_remote_fetch.py`).
-- Manifest generation & registry CLI: added `Engine.generate_manifest()` and `bldrx manifest create` to generate `bldrx-manifest.json` files for templates, optionally sign them with HMAC (`--sign`) using `BLDRX_MANIFEST_KEY`, and aid template registry workflows (tests added `tests/test_manifest_registry.py`).
-- Plugin system & remote sources: implemented — added a `PluginManager` to install/load simple Python plugins from `~/.bldrx/plugins` and CLI helpers `bldrx plugin install/list/remove`. Added HTTP(S) download and `git clone` support to `Engine.fetch_remote_template()` with sandboxed extraction and optional manifest verification. Tests added (`tests/test_plugins.py`, network calls mocked where appropriate).
-- Template catalog CLI: added `bldrx catalog publish/search/info/remove` for a simple local template catalog format stored under `BLDRX_REGISTRY_DIR` (default: `~/.bldrx/registry`). Useful as a local index for sharing, searching, and publishing templates. Tests added (`tests/test_catalog.py`).
-- CI: added `scripts/ci_validate_templates.py` and a `validate-templates` GitHub Actions job which runs on push/PR and validates template syntax, undefined variables, and manifests (including HMAC checks). Note: CI now installs the local package (editable mode) before running validation so scripts can import `bldrx`. The validation script treats undefined Jinja variables as **warnings** by default; set `BLDRX_VALIDATE_FAIL_ON_UNDEFINED=1` to make CI strict and fail on undefined variables.
-- Analytics & telemetry (opt-in): added `bldrx.telemetry` with a small opt-in telemetry helper that writes newline-delimited JSON events to a local log file (`~/.bldrx/telemetry.log`) and a `bldrx telemetry` CLI group to enable/disable/check status. Telemetry is disabled by default and includes an optional `BLDRX_TELEMETRY_ENDPOINT` for remote collection (best-effort, disabled by default). Tests added (`tests/test_telemetry.py`).
+- No unreleased changes — all planned top-priority improvements have been implemented and released in **0.1.2**. See the 0.1.2 entry for details.
+
+## 2026-01-04 — 0.1.1
+
+- Template validator / linter: validation and tests added to detect Jinja syntax errors and unresolved variables; `Engine.validate_template` implemented and CLI integration available.
+- Improve preview & dry-run UX: machine-readable `--json` dry-run output and preview diffs implemented (`preview-template --render --diff`, `--json`).
+- Transactional apply & atomic replace: per-file atomic replace using temp files and `os.replace`, rollback on failure; backup support added to allow reversible changes.
+- Safe merging (merge strategies): added `--merge` strategies: `append`, `prepend`, and `marker` (file markers).
+- Encoding & binary detection: templates and raw files that are non-UTF8 or large/binary are detected and skipped with clear statuses (`would-skip-binary`, `would-skip-large`).
+- Concurrency & locking: per-template lockfiles prevent concurrent installs/uninstalls; supports timeouts and robust error handling.
+- Template provenance & signatures: `bldrx-manifest.json` generation and verification (`Engine.generate_manifest`, `Engine.verify_template`); optional HMAC-SHA256 signatures via `BLDRX_MANIFEST_KEY` and `--sign`/`--verify` flags.
+- Remote template fetching with sandbox: `Engine.fetch_remote_template()` supports `file://` archives, `.tar.gz`/`.zip`, and `git` remotes with safe extraction and optional manifest verification.
+- Manifest generation & registry CLI: added `bldrx manifest create` to generate manifests and sign them; tests added for provenance workflows.
+- Plugin system & remote sources: `PluginManager` and `bldrx plugin` CLI implemented; fetch improvements include HTTP(S) download and Git clone support.
+- Template catalog CLI: added `bldrx catalog publish/search/info/remove` for a local JSON registry format stored under `BLDRX_REGISTRY_DIR` (useful for sharing and discovery).
+- CI: added `scripts/ci_validate_templates.py` and a `validate-templates` GitHub Actions job which validates template syntax, undefined variables (warnings by default), and manifests (HMAC checks); CI installs the package in editable mode prior to validation.
+- Analytics & telemetry (opt-in): added `bldrx.telemetry` and `bldrx telemetry` CLI for opt-in telemetry; events are written locally to `~/.bldrx/telemetry.log` and remote endpoint support is available but off by default.
 - Docs: added `docs/ADVANCED_SCENARIOS.md` documenting manifest signing, registry/publish workflows, CI validation, telemetry privacy, plugin guidance, and troubleshooting tips.
+
+
+
+## 2026-01-04 — 0.1.2
+
+- Added file inclusion/exclusion filters for templates:
+  - CLI options: `--only` and `--except` (comma-separated relative paths) added to `bldrx new`, `bldrx add-templates` and `bldrx preview-template`.
+  - Engine support: `Engine.apply_template(..., only_files=[...], except_files=[...])` filters applied to both raw and `.j2` template files (for `.j2` use rendered target paths, e.g. `README.md`).
+  - Tests: added `tests/test_apply_filters.py` covering `--only`, `--except`, and combined behaviors.
+- Documentation: updated `README.md` with a comprehensive commands table and examples for `--only`/`--except` usage.
+- Added safe backups and optional git commit support for applied changes: `backup=True` stores reversible backups under `./.bldrx/backups/<timestamp>/...` and `git_commit=True` stages & commits changes in destination repos when available.
 
 ## 2026-01-04 — Summary of implemented features & fixes
 

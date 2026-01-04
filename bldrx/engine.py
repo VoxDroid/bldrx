@@ -334,7 +334,7 @@ class Engine:
         ok = (not mismatches) and (not missing) and (signature_valid is not False if signature_present else True)
         return {'ok': ok, 'mismatches': mismatches, 'missing': missing, 'manifest_missing': False, 'signature_present': signature_present, 'signature_valid': signature_valid}
 
-    def apply_template(self, template_name: str, dest: Path, metadata: dict, force: bool = False, dry_run: bool = False, templates_dir: Path = None, backup: bool = False, git_commit: bool = False, git_message: str = None, atomic: bool = False, merge: str = None, verify: bool = False):
+    def apply_template(self, template_name: str, dest: Path, metadata: dict, force: bool = False, dry_run: bool = False, templates_dir: Path = None, backup: bool = False, git_commit: bool = False, git_message: str = None, atomic: bool = False, merge: str = None, verify: bool = False, only_files: list = None, except_files: list = None):
         """Apply the named template into `dest`.
 
         New options:
@@ -368,11 +368,31 @@ class Engine:
             if not vres.get('ok'):
                 raise RuntimeError(f"Template verification failed: mismatches={vres.get('mismatches')}, missing={vres.get('missing')}, signature_present={vres.get('signature_present')}, signature_valid={vres.get('signature_valid')}")
 
+        # Prepare inclusion/exclusion sets
+        def _norm_target_path(rel_path, is_template):
+            # For template files (.j2) match against the rendered target path (remove .j2); otherwise use relative path
+            s = str(rel_path).replace('\\', '/')
+            if is_template and s.endswith('.j2'):
+                s = s[:-3]
+            return s
+
+        only_set = set([p.replace('\\', '/') for p in only_files]) if only_files else None
+        except_set = set([p.replace('\\', '/') for p in except_files]) if except_files else None
+
         # Walk files
         BINARY_SIZE_THRESHOLD = 1_000_000  # bytes; files larger than this are considered large and skipped unless forced
         for p in src.rglob("*"):
             rel = p.relative_to(src)
             target = dest / rel
+
+            # evaluate include/exclude filters
+            rel_for_match = _norm_target_path(rel, is_template=(p.suffix == '.j2'))
+            if only_set is not None and rel_for_match not in only_set:
+                # skip this file entirely
+                continue
+            if except_set is not None and rel_for_match in except_set:
+                continue
+
             if p.is_dir():
                 target.mkdir(parents=True, exist_ok=True)
                 continue

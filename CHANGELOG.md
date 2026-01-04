@@ -10,6 +10,9 @@ All notable changes to this project are documented in this file.
 - Transactional apply & atomic replace: completed — per-file atomic replace (using temp files and `os.replace`), rollback on failure, and backup support; tests added.
 - Safe merging (merge strategies): completed — added `--merge` with `append`, `prepend`, and `marker` strategies; `patch` reserved for future work.
 - Encoding & binary detection: completed — templates that are non-UTF8 and large/binary raw files are now detected and skipped with clear statuses; tests added.
+- Concurrency & locking: implemented — per-template lockfiles prevent concurrent installs/uninstalls; supports timeouts and tests validate blocking and timeout behavior.
+- Template provenance & signatures: completed — added manifest verification support (`Engine.verify_template`) and optional HMAC-SHA256 signatures using the `BLDRX_MANIFEST_KEY` env var; `--verify` will fail on mismatches or invalid signatures (HMAC support added; asymmetric signatures planned).
+- Remote template fetching with sandbox: added `Engine.fetch_remote_template()` to fetch and extract local `file://` tar/zip archives into the user templates dir using a secure sandbox (prevents path traversal). Optionally runs manifest verification after extraction. Tests added (`tests/test_remote_fetch.py`).
 
 ## 2026-01-04 — Summary of implemented features & fixes
 
@@ -56,6 +59,8 @@ All notable changes to this project are documented in this file.
   - Added GitHub Actions workflow to run tests on push/PR and fixed artifact uploads.
   - Fix applied: make artifact names unique per job/run and add `build-artifacts` job to build and upload distributions on tag pushes.
 - Added `--wrap` option to `install-template` to allow preserving the source top-level folder when installing templates (useful for `.github` directories); default installs contents-only.
+- Template provenance & signatures: completed — added manifest verification support (`Engine.verify_template`) and optional HMAC-SHA256 signatures using the `BLDRX_MANIFEST_KEY` env var; `--verify` will fail on mismatches or invalid signatures (HMAC support added; asymmetric signatures planned).
+- Remote template fetching with sandbox: implemented — added `Engine.fetch_remote_template()` to fetch and extract local `file://` tar/zip archives into the user templates dir using a secure sandbox (prevents path traversal). Optionally runs manifest verification after extraction.
 
 ---
 

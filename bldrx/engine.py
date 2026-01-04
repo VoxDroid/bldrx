@@ -209,7 +209,56 @@ class Engine:
             out.append({'path': path, 'action': status})
         return out
 
-    def apply_template(self, template_name: str, dest: Path, metadata: dict, force: bool = False, dry_run: bool = False, templates_dir: Path = None, backup: bool = False, git_commit: bool = False, git_message: str = None, atomic: bool = False, merge: str = None):
+    def verify_template(self, template_name: str, templates_dir: Path = None):
+        """Verify template integrity based on a manifest file `bldrx-manifest.json`.
+
+        Manifest format: {"files": {"rel/path": "sha256hex", ...},
+                          "hmac": "hexhmac" (optional - HMAC-SHA256 over canonical files object)
+                         }
+        Returns: {
+            'ok': bool,
+            'mismatches': [relpaths],
+            'missing': [relpaths],
+            'manifest_missing': bool,
+            'signature_present': bool,
+            'signature_valid': True|False|None
+        }
+        """
+        import json, hashlib, hmac, os
+        src = self._find_template_src(template_name, templates_dir)
+        manifest_path = src / 'bldrx-manifest.json'
+        if not manifest_path.exists():
+            return {'ok': True, 'mismatches': [], 'missing': [], 'manifest_missing': True, 'signature_present': False, 'signature_valid': None}
+        manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+        files = manifest.get('files', {})
+        mismatches = []
+        missing = []
+        for rel, expected in files.items():
+            fpath = src / rel
+            if not fpath.exists():
+                missing.append(rel)
+                continue
+            h = hashlib.sha256()
+            h.update(fpath.read_bytes())
+            actual = h.hexdigest()
+            if actual != expected:
+                mismatches.append(rel)
+        # Optional HMAC signature verification (HMAC-SHA256)
+        signature = manifest.get('hmac') or manifest.get('signature')
+        signature_present = bool(signature)
+        signature_valid = None
+        if signature_present:
+            key = os.getenv('BLDRX_MANIFEST_KEY')
+            if not key:
+                signature_valid = False
+            else:
+                canonical = json.dumps({'files': files}, sort_keys=True, separators=(',', ':')).encode('utf-8')
+                expected_sig = hmac.new(key.encode('utf-8'), canonical, hashlib.sha256).hexdigest()
+                signature_valid = hmac.compare_digest(expected_sig, signature)
+        ok = (not mismatches) and (not missing) and (signature_valid is not False if signature_present else True)
+        return {'ok': ok, 'mismatches': mismatches, 'missing': missing, 'manifest_missing': False, 'signature_present': signature_present, 'signature_valid': signature_valid}
+
+    def apply_template(self, template_name: str, dest: Path, metadata: dict, force: bool = False, dry_run: bool = False, templates_dir: Path = None, backup: bool = False, git_commit: bool = False, git_message: str = None, atomic: bool = False, merge: str = None, verify: bool = False):
         """Apply the named template into `dest`.
 
         New options:
@@ -217,6 +266,7 @@ class Engine:
         - git_commit: if True and `dest` is a git repo, stage & commit changes after apply with `git_message`.
         - atomic: if True, perform per-file atomic replace with rollback on failure.
         - merge: optional strategy to handle existing files (append|prepend|marker|patch). If None, default behavior applies (skip or overwrite with force).
+        - verify: if True, verify checksums using `bldrx-manifest.json` before applying; raise on mismatch.
         """
         import subprocess
 
@@ -235,6 +285,12 @@ class Engine:
         # Keep global state for atomic replacements so we can rollback across multiple files
         global_replaced = []  # list of (final_path, backup_path or None)
         global_new_created = []
+
+        # Verify manifest if requested
+        if verify:
+            vres = self.verify_template(template_name, templates_dir=templates_dir)
+            if not vres.get('ok'):
+                raise RuntimeError(f"Template verification failed: mismatches={vres.get('mismatches')}, missing={vres.get('missing')}, signature_present={vres.get('signature_present')}, signature_valid={vres.get('signature_valid')}")
 
         # Walk files
         BINARY_SIZE_THRESHOLD = 1_000_000  # bytes; files larger than this are considered large and skipped unless forced
@@ -497,11 +553,39 @@ class Engine:
                 target.unlink()
                 yield (str(target), "removed")
 
-    def install_user_template(self, src_path: Path, name: str = None, force: bool = False, wrap: bool = False):
+    def _acquire_lock(self, lock_path: Path, timeout: float = 5.0):
+        """Acquire a simple file lock by creating a lockfile using O_EXCL.
+
+        Raises RuntimeError on timeout.
+        """
+        import time, os
+        deadline = time.time() + timeout if timeout is not None else None
+        while True:
+            try:
+                fd = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                os.write(fd, str(os.getpid()).encode())
+                os.close(fd)
+                return
+            except FileExistsError:
+                if deadline is not None and time.time() > deadline:
+                    raise RuntimeError(f"Could not acquire lock {lock_path} within {timeout} seconds")
+                time.sleep(0.05)
+
+    def _release_lock(self, lock_path: Path):
+        try:
+            if lock_path.exists():
+                lock_path.unlink()
+        except Exception:
+            pass
+
+    def install_user_template(self, src_path: Path, name: str = None, force: bool = False, wrap: bool = False, lock_timeout: float = 5.0):
         """Copy a template folder into the user templates directory.
 
         If `wrap` is False (default) the contents of `src_path` are copied into `user_templates/name`.
         If `wrap` is True the entire `src_path` folder is preserved under `user_templates/name/<src_basename>`.
+
+        New option:
+        - lock_timeout: seconds to wait to acquire a per-template install lock to avoid concurrent installs.
         """
         src = Path(src_path)
         if not src.exists() or not src.is_dir():
@@ -509,25 +593,33 @@ class Engine:
         name = name or src.name
         base_dest = self.user_templates_root / name
         base_dest.parent.mkdir(parents=True, exist_ok=True)
-        if base_dest.exists() and not force:
-            raise FileExistsError(f"Template '{name}' already exists in user templates; use force=True to overwrite")
-        # remove existing if force
-        if base_dest.exists() and force:
-            shutil.rmtree(base_dest)
-        if wrap:
-            dest = base_dest / src.name
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copytree(src, dest)
-        else:
-            # copy contents of src into base_dest
-            base_dest.mkdir(parents=True, exist_ok=True)
-            for p in src.iterdir():
-                target = base_dest / p.name
-                if p.is_dir():
-                    shutil.copytree(p, target)
-                else:
-                    shutil.copy2(p, target)
-        return base_dest
+
+        lock_path = base_dest.parent / f".{name}.lock"
+        # acquire per-template lock
+        self._acquire_lock(lock_path, timeout=lock_timeout)
+        try:
+            if base_dest.exists() and not force:
+                raise FileExistsError(f"Template '{name}' already exists in user templates; use force=True to overwrite")
+            # remove existing if force
+            if base_dest.exists() and force:
+                shutil.rmtree(base_dest)
+            if wrap:
+                dest = base_dest / src.name
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copytree(src, dest)
+            else:
+                # copy contents of src into base_dest
+                base_dest.mkdir(parents=True, exist_ok=True)
+                for p in src.iterdir():
+                    target = base_dest / p.name
+                    if p.is_dir():
+                        shutil.copytree(p, target)
+                    else:
+                        shutil.copy2(p, target)
+            return base_dest
+        finally:
+            # release lock always
+            self._release_lock(lock_path)
 
     def uninstall_user_template(self, name: str, force: bool = False):
         dest = self.user_templates_root / name
@@ -535,3 +627,97 @@ class Engine:
             raise FileNotFoundError(f"User template '{name}' not found")
         shutil.rmtree(dest)
         return True
+
+    def fetch_remote_template(self, url: str, name: str = None, force: bool = False, verify: bool = True):
+        """Fetch a remote template archive or directory and install it into user templates.
+
+        Supported sources for this MVP: local file paths and file:// URLs pointing to a directory, .tar.gz/.tgz or .zip archive.
+        The archive is extracted into a sandbox (tempdir) and checked for path traversal attempts before installation.
+
+        Params:
+        - url: location to fetch (file:// or local path)
+        - name: name to install the template as (defaults to archive/dir basename)
+        - force: pass to `install_user_template` to overwrite existing
+        - verify: if True, run manifest verification inside the sandbox before installing
+
+        Returns: Path to installed template folder
+        """
+        import tempfile, tarfile, zipfile, urllib.parse
+        src_path = None
+        parsed = urllib.parse.urlparse(url)
+        if parsed.scheme == 'file':
+            import urllib.request
+            pathstr = urllib.request.url2pathname(parsed.path)
+            src_path = Path(pathstr)
+        else:
+            # treat as local path fallback for now
+            p = Path(url)
+            if p.exists():
+                src_path = p
+            else:
+                raise ValueError("Unsupported URL scheme or path not found: %s" % url)
+
+        with tempfile.TemporaryDirectory() as td:
+            tdpath = Path(td)
+            # if it's a directory, copy its contents to temp dir
+            if src_path.is_dir():
+                # copytree to td/extracted
+                dest_ex = tdpath / src_path.name
+                shutil.copytree(src_path, dest_ex)
+            else:
+                # file: decide based on suffix
+                if src_path.suffix in ('.gz', '.tgz') or src_path.name.endswith('.tar.gz'):
+                    # extract tar safely
+                    with tarfile.open(src_path, 'r:gz') as tf:
+                        # safety check for path traversal
+                        for member in tf.getmembers():
+                            member_path = Path(member.name)
+                            if member_path.is_absolute() or '..' in member_path.parts:
+                                raise RuntimeError('Unsafe archive: path traversal detected')
+                        tf.extractall(path=tdpath)
+                elif src_path.suffix == '.zip':
+                    with zipfile.ZipFile(src_path, 'r') as zf:
+                        for fn in zf.namelist():
+                            fpath = Path(fn)
+                            if fpath.is_absolute() or '..' in fpath.parts:
+                                raise RuntimeError('Unsafe archive: path traversal detected')
+                        zf.extractall(path=tdpath)
+                else:
+                    raise ValueError('Unsupported archive format for: %s' % src_path)
+
+            # Locate the extracted root dir (single child assumed or use tdpath itself)
+            children = [p for p in tdpath.iterdir() if p.exists()]
+            if len(children) == 1 and children[0].is_dir():
+                extracted = children[0]
+            else:
+                # either multiple entries or a flat archive, use tdpath as root
+                extracted = tdpath
+
+            # Optionally verify manifest (perform local manifest checks inside the extracted sandbox)
+            if verify:
+                manifest_path = extracted / 'bldrx-manifest.json'
+                if manifest_path.exists():
+                    import json, hashlib
+                    manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+                    files = manifest.get('files', {})
+                    mismatches = []
+                    missing = []
+                    for rel, expected in files.items():
+                        fpath = extracted / rel
+                        if not fpath.exists():
+                            missing.append(rel)
+                            continue
+                        h = hashlib.sha256()
+                        h.update(fpath.read_bytes())
+                        actual = h.hexdigest()
+                        if actual != expected:
+                            mismatches.append(rel)
+                    if mismatches or missing:
+                        raise RuntimeError(f"Remote template verification failed: mismatches={mismatches}, missing={missing}")
+                # if no manifest present we allow installation (but user may opt to require manifests later)
+
+            # Install into user templates
+            install_name = name or extracted.name
+            # Use install_user_template to perform the copy into user templates
+            dest = self.install_user_template(extracted, name=install_name, force=force)
+            return dest

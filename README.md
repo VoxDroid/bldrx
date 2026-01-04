@@ -143,6 +143,16 @@ New: list & preview enhancements
 - `bldrx list-templates --details` shows the subfiles contained in each template (including `.github` subfolders).
 - `bldrx preview-template <template> --file <path>` shows raw template content; add `--render` and `--meta key=val` to render it with provided metadata.
 
+Security & integrity
+
+- Templates may include a `bldrx-manifest.json` describing per-file SHA256 checksums in a `files` mapping and an optional HMAC signature in the `hmac` field.
+- Use the `--verify` flag when applying templates (`bldrx new ... --verify` or `bldrx add-templates ... --verify`) to require manifest verification before files are applied.
+- For HMAC-protected manifests, set `BLDRX_MANIFEST_KEY` (shared secret) in the environment to validate signatures. Asymmetric signatures (public-key) are planned for a future release.
+
+Remote fetching (local archives)
+
+- `Engine.fetch_remote_template(url, name, force=True)` supports local `file://` archives (`.tar.gz`, `.tgz`, `.zip`) and directories. Archives are extracted into a secure sandbox and checked for path traversal before installation. A CLI helper for remote installs (HTTP/Git) is planned.
+
 Example (bash/macOS/Linux):
 
 ```bash

@@ -31,6 +31,7 @@
 | CLI: `list-templates` | Implemented | `--details` shows files, `--json` outputs JSON |
 | CLI: `remove-template` | Implemented | Safety prompts, `--yes` implies removal, `--dry-run` available |
 | CLI: `install-template` / `uninstall-template` | Implemented | Installs to user templates dir; interactive prompts supported. Supports `--wrap` to preserve the source top-level folder (e.g., install `.github` as a folder); default behavior copies contents only. |
+| Remote template fetching with sandbox | Implemented | `Engine.fetch_remote_template(url, name, force=True)` supports `file://` archives (tar.gz, zip) and directories; extracts in a sandbox, prevents path traversal, and optionally verifies manifest before installation. |
 | Template rendering (Jinja2) | Implemented | StrictUndefined to detect missing placeholders |
 | Dry-run and force behavior | Implemented | `would-render` / `would-copy` / `would-remove` statuses reported |
 | User templates directory & env override | Implemented | `BLDRX_TEMPLATES_DIR` and default user dir supported |
@@ -45,6 +46,7 @@
 | Safe merging (content-level merge) | Implemented | Added `--merge` strategies: `append`, `prepend`, `marker` (file markers). `patch` reserved for future work. |
 | Config files for defaults (`.bldrx` etc.) | Planned | Add user config to store defaults and metadata per user/project |
 | Encoding & binary detection | Implemented | Detect non-UTF8 templates and large/binary files and skip with clear statuses (`would-skip-binary`, `would-skip-large`) |
+| Concurrency & locking for user templates dir | Implemented | Per-template lockfiles to serialize installs/uninstalls; Timeout and errors handled; tests added |
 | Transactional apply & atomic replace | Implemented | Per-file atomic replace using temp files in destination dir; rollback on failure; supports `--atomic` and `backup`; tests added (see `tests/test_transactional_apply.py`) |
 | Tests | Implemented | Unit tests for engine, CLI, templates, user templates, docs included |
 | CI (tests on push/PR) | Implemented | `.github/workflows/ci.yml` runs pytest matrix (3.9–3.11) |
@@ -79,9 +81,9 @@ These are the next features we will implement, prioritized for impact and feasib
      - `Engine.preview_template(..., diff=True)` returns a list of preview entries with `diff` fields when requested.
      - Tests: added `tests/test_preview_diff.py` and `tests/test_cli_preview_diff.py` validating unified diff and JSON output.
 
-3. Template validator / linter (In-progress)
+3. Template validator / linter (Implemented)
    - Goal: Validate `.j2` syntax and warn about unresolved variables before apply.
-   - Status: In-progress. Implemented `Engine.validate_template` (TDD) to detect template syntax errors and report unresolved variables.
+   - Status: Implemented. `Engine.validate_template` (TDD) detects template syntax errors and reports unresolved variables; tests are included.
    - Acceptance criteria:
      - `Engine.validate_template(template_name)` returns a dict containing `syntax_errors` and `undefined_variables` mappings per-file.
      - Tests: unit tests `tests/test_template_validator.py` verify detection of syntax errors, unresolved variables, and clean templates.

@@ -19,7 +19,8 @@ def cli():
 @click.option('--dry-run', 'dry_run', is_flag=True, help='Show planned actions but do not write files')
 @click.option('--json', 'as_json', is_flag=True, help='Output machine-readable JSON when used with --dry-run')
 @click.option('--merge', 'merge_strategy', type=click.Choice(['append','prepend','marker','patch']), default=None, help='Merge strategy to use when target file exists')
-def new(project_name, templates, project_type, author, email, github_username, meta, force, dry_run, as_json, merge_strategy):
+@click.option('--verify', 'verify_integrity', is_flag=True, help='Verify template integrity using bldrx-manifest.json before applying')
+def new(project_name, templates, project_type, author, email, github_username, meta, force, dry_run, as_json, merge_strategy, verify_integrity):
     """Scaffold a new project"""
     engine = Engine()
     dest = Path(project_name)
@@ -61,7 +62,7 @@ def new(project_name, templates, project_type, author, email, github_username, m
             for e in preview:
                 click.echo(f"  {e['action']}: {e['path']}")
         else:
-            for path, status in engine.apply_template(t, dest, metadata, force=force, dry_run=dry_run, atomic=True, merge=merge_strategy):
+            for path, status in engine.apply_template(t, dest, metadata, force=force, dry_run=dry_run, atomic=True, merge=merge_strategy, verify=verify_integrity):
                 click.echo(f"  {status}: {path}")
     if dry_run and as_json:
         import json
@@ -108,7 +109,8 @@ def list_templates(as_json, templates_dir, details):
 @click.option('--dry-run', 'dry_run', is_flag=True, help='Show planned actions but do not write files')
 @click.option('--json', 'as_json', is_flag=True, help='Output machine-readable JSON when used with --dry-run')
 @click.option('--merge', 'merge_strategy', type=click.Choice(['append','prepend','marker','patch']), default=None, help='Merge strategy to use when target file exists')
-def add_templates(project_path, templates, templates_dir, author, email, github_username, meta, force, dry_run, as_json, merge_strategy):
+@click.option('--verify', 'verify_integrity', is_flag=True, help='Verify template integrity using bldrx-manifest.json before applying')
+def add_templates(project_path, templates, templates_dir, author, email, github_username, meta, force, dry_run, as_json, merge_strategy, verify_integrity):
     """Inject templates into existing project"""
     engine = Engine()
     dest = Path(project_path)

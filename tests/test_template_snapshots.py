@@ -7,9 +7,9 @@ from bldrx.engine import Engine
 SNAPSHOT_DIR = Path(__file__).parent / 'snapshots'
 SAMPLE_METADATA = {
     'project_name': 'demo',
-    'author_name': 'Alice',
-    'email': 'alice@example.com',
-    'github_username': 'alice'
+    'author_name': 'VoxDroid',
+    'email': 'izeno.contact@gmail.com',
+    'github_username': 'VoxDroid'
 }
 
 # List of (template_name, jinja_relative_path) tuples to snapshot

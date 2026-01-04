@@ -117,11 +117,22 @@ class Engine:
             raise FileNotFoundError(f"Template file '{file_path}' not found in template '{template_name}'")
         # if it's a jinja template, render it, otherwise return raw text
         if target.suffix == '.j2':
+            # allow per-template CI metadata defaults to satisfy render-time placeholders
+            defaults = {}
+            md_path = src / 'ci_metadata.json'
+            if md_path.exists():
+                try:
+                    import json
+                    defaults = json.loads(md_path.read_text(encoding='utf-8'))
+                except Exception:
+                    defaults = {}
+            # merge: provided metadata overrides defaults
+            merged_meta = {**defaults, **(metadata or {})}
             from jinja2 import Environment, FileSystemLoader, StrictUndefined
             rel_template_path = str(Path(file_path)).replace('\\', '/')
             env = Environment(loader=FileSystemLoader(str(src)), undefined=StrictUndefined)
             tmpl = env.get_template(rel_template_path)
-            return tmpl.render(**{**metadata, 'year': datetime.now().year})
+            return tmpl.render(**{**merged_meta, 'year': datetime.now().year})
         else:
             return target.read_text(encoding='utf-8')
 
@@ -176,9 +187,19 @@ class Engine:
                 # render
                 from jinja2 import Environment, FileSystemLoader, StrictUndefined
                 rel_template_path = str(rel).replace('\\', '/')
+                # load per-template defaults if present
+                defaults = {}
+                md_path = src / 'ci_metadata.json'
+                if md_path.exists():
+                    try:
+                        import json
+                        defaults = json.loads(md_path.read_text(encoding='utf-8'))
+                    except Exception:
+                        defaults = {}
+                merged_meta = {**defaults, **(metadata or {})}
                 env = Environment(loader=FileSystemLoader(str(src)), undefined=StrictUndefined)
                 tmpl = env.get_template(rel_template_path)
-                new_text = tmpl.render(**{**metadata, 'year': datetime.now().year})
+                new_text = tmpl.render(**{**merged_meta, 'year': datetime.now().year})
                 if out_path.exists():
                     old_text = out_path.read_text(encoding='utf-8')
                     if old_text == new_text:
@@ -375,9 +396,19 @@ class Engine:
                 # template resolution uses the chosen source (user or package) rather than the global loader order
                 from jinja2 import Environment, FileSystemLoader, StrictUndefined
                 rel_template_path = str(rel).replace('\\', '/')
+                # load per-template defaults if present
+                defaults = {}
+                md_path = src / 'ci_metadata.json'
+                if md_path.exists():
+                    try:
+                        import json
+                        defaults = json.loads(md_path.read_text(encoding='utf-8'))
+                    except Exception:
+                        defaults = {}
+                merged_meta = {**defaults, **(metadata or {})}
                 env = Environment(loader=FileSystemLoader(str(src)), undefined=StrictUndefined)
                 tmpl = env.get_template(rel_template_path)
-                text = tmpl.render(**{**metadata, "year": datetime.now().year})
+                text = tmpl.render(**{**merged_meta, "year": datetime.now().year})
                 if dry_run:
                     yield (str(out_path), "would-render")
                     continue

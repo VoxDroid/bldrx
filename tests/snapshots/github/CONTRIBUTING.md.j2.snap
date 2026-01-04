@@ -1,5 +1,22 @@
 # Contributing to demo
 
-Thank you for your interest!
+Thank you for your interest in contributing to **demo**! We welcome patches, documentation improvements, templates, and new features.
 
-Contact: Alice (alice@example.com) — GitHub: @alice
+**Maintainer / Contact:** VoxDroid (<izeno.contact@gmail.com>) — GitHub: @VoxDroid
+
+## Quick start
+- Fork the repository: https://github.com/VoxDroid/demo
+- Create a branch for your change: `git checkout -b feature/your-change`
+- Run tests locally and add tests for new behavior: `python -m pytest -q`
+- Open a pull request with a clear description, test steps, and related issue links.
+
+## Templates & CI
+- When adding or modifying templates, include `ci_metadata.json` to help CI validate render-time placeholders.
+- Use `scripts/ci_validate_templates.py` in CI to validate templates and manifests.
+
+## Code style
+- Follow PEP 8 and keep changes small and focused.
+- Add tests (unit and snapshot tests for templates when appropriate).
+
+## Contact and support
+If you need help, use the repository Discussions page or contact the maintainers at <izeno.contact@gmail.com>. We appreciate your contributions!

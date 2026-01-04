@@ -29,6 +29,6 @@ def test_preview_template_raw_and_render(tmp_path, monkeypatch):
     assert result.exit_code == 0
     assert 'Hello {{ who }}' in result.output
     # render
-    result2 = runner.invoke(cli, ['preview-template', 'bar', '--file', 'hello.txt.j2', '--render', '--meta', 'who=Alice', '--templates-dir', str(tpl_root)])
+    result2 = runner.invoke(cli, ['preview-template', 'bar', '--file', 'hello.txt.j2', '--render', '--meta', 'who=VoxDroid', '--templates-dir', str(tpl_root)])
     assert result2.exit_code == 0
-    assert 'Hello Alice' in result2.output
+    assert 'Hello VoxDroid' in result2.output

@@ -1,6 +1,6 @@
-# Bldrx — Project Scaffolding & Template Injector
+# bldrx — Project scaffolding & template injector
 
-Bldrx is a CLI-first tool to quickly scaffold new projects and inject reusable templates into existing repositories.
+bldrx is a developer-first CLI for scaffolding new projects and injecting reusable templates (CI, GitHub meta files, README/license, lint configs) into new or existing repositories.
 
 This README contains quick installation and usage instructions. For the project prototyping notes and full outline see `PROJECT_OUTLINE.md`.
 
@@ -8,52 +8,61 @@ This README contains quick installation and usage instructions. For the project 
 
 ## Quickstart
 
-Install in a virtual environment:
+Install (editable mode is recommended during development):
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate  # or .\.venv\Scripts\Activate.ps1 on Windows
-pip install --upgrade pip
-pip install -r requirements.txt
+# macOS / Linux
+source .venv/bin/activate
+# Windows PowerShell
+# .\.venv\Scripts\Activate.ps1
+
+python -m pip install --upgrade pip
+python -m pip install -e .
 ```
 
 Run tests:
 
 ```bash
-python -m pytest -q
+pytest -q -vv
 ```
 
-Build and install locally:
+Get help:
 
 ```bash
-python -m build
-pip install dist/*.whl
+bldrx --help
+bldrx <command> --help
 ```
 
-## Examples
 
-List available templates:
+## Quick examples
+
+List available templates (human- and machine-readable):
 
 ```bash
 bldrx list-templates
+bldrx list-templates --json
+bldrx list-templates --details   # show files contained in each template
 ```
 
 Install a user template and list templates:
 
 ```bash
-bldrx install-template ~/my-templates/cool-template --name cool
+bldrx install-template /path/to/local-template --name cool --wrap
 bldrx list-templates
 ```
 
 Preview a template file or its rendered output:
 
 ```bash
-bldrx list-templates --details
+bldrx preview-template python-cli                  # list template files
 bldrx preview-template python-cli --file README.md.j2
 bldrx preview-template python-cli --file README.md.j2 --render --meta project_name=demo
+bldrx preview-template python-cli --render --diff --meta project_name=demo
 ```
 
-For full usage and prototyping notes, see `PROJECT_OUTLINE.md`, `BUILD_INSTRUCTIONS.md`, and the advanced guide at `docs/ADVANCED_SCENARIOS.md`.
+For full usage and prototyping notes, see `PROJECT_OUTLINE.md`, `BUILD_INSTRUCTIONS.md`, and `docs/ADVANCED_SCENARIOS.md`.
+
 
 ## Configuration
 
@@ -81,14 +90,28 @@ Config file (planned): support a `.bldrx` TOML/YAML file to store default metada
 
 
 
-### A. CLI Commands
+### CLI reference — commands & options
 
-| Command                                  | Purpose                                | Details                                                                                  |
-| ---------------------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `bldrx new <project_name>`               | Scaffold a new project                 | Choose project type (Python CLI / library / Node API / React app) and optional templates |
-| `bldrx add-templates <existing_project>` | Inject templates into existing project | Add GitHub meta files, CI/CD workflows, README, contributing docs, etc. |
-| `bldrx list-templates`                   | Show available templates               | JSON or human-readable table                                                           |
-| `bldrx remove-template <name>`           | Remove a template from a project       | Safety flag to prevent accidental deletes (requires `--force` or `--yes`)             |
+Below is a comprehensive table with each command, key options, a short description, and a basic example. Use `bldrx <command> --help` for full option lists and platform-specific notes.
+
+| Command | Key options | Description | Example |
+| --- | --- | --- | --- |
+| `bldrx new <project_name>` | `--type` `--templates` `--author` `--email` `--github-username` `--meta KEY=VAL` `--dry-run` `--json` `--force` `--merge` `--verify` | Scaffold a new project from templates. `--templates` overrides type defaults. `--dry-run` shows planned actions. | `bldrx new my-tool --type python-cli --templates python-cli,ci --author "You" --dry-run` |
+| `bldrx add-templates <project_path>` | `--templates` `--templates-dir` `--author` `--email` `--github-username` `--meta` `--dry-run` `--json` `--force` `--merge` `--verify` | Inject one or more templates into an existing project. If `--templates` omitted, interactive prompt lists available templates. | `bldrx add-templates ./repo --templates contributing,ci --dry-run` |
+| `bldrx list-templates` | `--details` `--templates-dir` `--json` | List templates from built-in and user sources. `--details` shows files inside templates. | `bldrx list-templates --details` |
+| `bldrx preview-template <template>` | `--file <path>` `--render` `--diff` `--meta KEY=VAL` `--templates-dir` | Show raw template files or their rendered content. `--diff` shows patch/diff against target project when rendering. | `bldrx preview-template python-cli --file README.md.j2 --render --meta project_name=demo` |
+| `bldrx install-template <src_path>` | `--name` `--wrap` `--force` | Install a local template into the user templates directory. `--wrap` preserves the source top folder. | `bldrx install-template ./my-template --name cool` |
+| `bldrx uninstall-template <name>` | `--yes` | Remove a user template. Use `--yes` to skip confirmation. | `bldrx uninstall-template cool --yes` |
+| `bldrx remove-template <project_path> <template_name>` | `--templates-dir` `--yes` `--force` `--dry-run` | Remove files previously added by a template. Requires explicit confirmation (`--yes`) or `--force`. Dangerous—use `--dry-run` first. | `bldrx remove-template ./repo contributing --dry-run` |
+| `bldrx manifest create <template_name>` | `--templates-dir` `--output` `--sign` `--key` | Generate a `bldrx-manifest.json` with per-file SHA256 checksums; `--sign` adds HMAC-SHA256 (requires `BLDRX_MANIFEST_KEY` or `--key`). | `bldrx manifest create cool --sign` |
+| `bldrx catalog publish` | `--name` `--version` `--description` `--tags` `--sign` `--key` `--force` | Publish a local template into the local catalog/registry (metadata entry only). | `bldrx catalog publish ./my-template --name cool --version 1.0.0 --tags "ci,github"` |
+| `bldrx catalog search <query>` | (query optional) | Search the local catalog by name, tag, or description. | `bldrx catalog search ci` |
+| `bldrx catalog info <name>` | `--version` | Show metadata for catalog entry. | `bldrx catalog info cool` |
+| `bldrx catalog remove <name>` | `--version` `--yes` | Remove a catalog entry; `--yes` skips confirmation. | `bldrx catalog remove cool --yes` |
+| `bldrx telemetry enable / disable /status` | (flags: none) | Opt-in telemetry controls (local-first, newline-delimited JSON log). | `bldrx telemetry enable` |
+| `bldrx plugin install / list / remove` | `--name` `--force` `--yes` | Install, list, and remove plugins managed by the plugin manager. | `bldrx plugin install ./my-plugin` |
+
+> Tip: pass repeated `--meta key=val` flags to provide multiple metadata values (e.g., `--meta project_name=MyProj --meta funding_url=https://...`).
 
 ---
 
@@ -308,7 +331,13 @@ bldrx new my_tool --author "Andrei" --email "andrei@example.com"
 
 A GitHub Actions workflow is included at `.github/workflows/ci.yml` which runs the test suite on push and pull requests (matrix: Python 3.9, 3.10, 3.11).
 
-Planned: Add a workflow that builds distribution artifacts on tags (sdist/wheel) and stores them as GitHub Actions artifacts — optionally publish to PyPI on release tags.
+This repository includes a `publish.yml` workflow (in `.github/workflows`) that will publish to PyPI when the latest commit subject equals `v<version>` from `pyproject.toml` (e.g., commit subject `v0.1.1` when package version is `0.1.1`).
+
+- Set `PYPI_API_TOKEN` (PyPI API token) in GitHub Secrets to enable uploads.
+- Optionally set `RELEASE_GITHUB_TOKEN` (a personal access token) to have the GitHub Release authored by your user rather than the Actions bot.
+
+Prefer testing against TestPyPI before publishing to the real PyPI; the workflow can be adapted to publish to TestPyPI first.
+
 
 ## **Folder / File Structure**
 

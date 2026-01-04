@@ -8,6 +8,8 @@ All notable changes to this project are documented in this file.
 - Template validator / linter: completed — validation and tests added to detect Jinja syntax errors and unresolved variables; CLI integration planned.
 - Improve preview & dry-run UX: completed — machine-readable `--json` dry-run output and preview diffs implemented.
 - Transactional apply & atomic replace: completed — per-file atomic replace (using temp files and `os.replace`), rollback on failure, and backup support; tests added.
+- Safe merging (merge strategies): completed — added `--merge` with `append`, `prepend`, and `marker` strategies; `patch` reserved for future work.
+- Encoding & binary detection: completed — templates that are non-UTF8 and large/binary raw files are now detected and skipped with clear statuses; tests added.
 
 ## 2026-01-04 — Summary of implemented features & fixes
 

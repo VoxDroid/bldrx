@@ -18,7 +18,8 @@ def cli():
 @click.option('--force', is_flag=True)
 @click.option('--dry-run', 'dry_run', is_flag=True, help='Show planned actions but do not write files')
 @click.option('--json', 'as_json', is_flag=True, help='Output machine-readable JSON when used with --dry-run')
-def new(project_name, templates, project_type, author, email, github_username, meta, force, dry_run, as_json):
+@click.option('--merge', 'merge_strategy', type=click.Choice(['append','prepend','marker','patch']), default=None, help='Merge strategy to use when target file exists')
+def new(project_name, templates, project_type, author, email, github_username, meta, force, dry_run, as_json, merge_strategy):
     """Scaffold a new project"""
     engine = Engine()
     dest = Path(project_name)
@@ -60,7 +61,7 @@ def new(project_name, templates, project_type, author, email, github_username, m
             for e in preview:
                 click.echo(f"  {e['action']}: {e['path']}")
         else:
-            for path, status in engine.apply_template(t, dest, metadata, force=force, dry_run=dry_run):
+            for path, status in engine.apply_template(t, dest, metadata, force=force, dry_run=dry_run, atomic=True, merge=merge_strategy):
                 click.echo(f"  {status}: {path}")
     if dry_run and as_json:
         import json
@@ -106,7 +107,8 @@ def list_templates(as_json, templates_dir, details):
 @click.option('--force', is_flag=True)
 @click.option('--dry-run', 'dry_run', is_flag=True, help='Show planned actions but do not write files')
 @click.option('--json', 'as_json', is_flag=True, help='Output machine-readable JSON when used with --dry-run')
-def add_templates(project_path, templates, templates_dir, author, email, github_username, meta, force, dry_run, as_json):
+@click.option('--merge', 'merge_strategy', type=click.Choice(['append','prepend','marker','patch']), default=None, help='Merge strategy to use when target file exists')
+def add_templates(project_path, templates, templates_dir, author, email, github_username, meta, force, dry_run, as_json, merge_strategy):
     """Inject templates into existing project"""
     engine = Engine()
     dest = Path(project_path)
@@ -141,7 +143,7 @@ def add_templates(project_path, templates, templates_dir, author, email, github_
             for e in preview:
                 click.echo(f"  {e['action']}: {e['path']}")
         else:
-            for path, status in engine.apply_template(t, dest, metadata, force=force, dry_run=dry_run, templates_dir=templates_dir):
+            for path, status in engine.apply_template(t, dest, metadata, force=force, dry_run=dry_run, templates_dir=templates_dir, atomic=True, merge=merge_strategy):
                 click.echo(f"  {status}: {path}")
     if dry_run and as_json:
         import json

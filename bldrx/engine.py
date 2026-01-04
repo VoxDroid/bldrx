@@ -209,13 +209,14 @@ class Engine:
             out.append({'path': path, 'action': status})
         return out
 
-    def apply_template(self, template_name: str, dest: Path, metadata: dict, force: bool = False, dry_run: bool = False, templates_dir: Path = None, backup: bool = False, git_commit: bool = False, git_message: str = None, atomic: bool = False):
+    def apply_template(self, template_name: str, dest: Path, metadata: dict, force: bool = False, dry_run: bool = False, templates_dir: Path = None, backup: bool = False, git_commit: bool = False, git_message: str = None, atomic: bool = False, merge: str = None):
         """Apply the named template into `dest`.
 
         New options:
         - backup: if True, save overwritten files into `dest/.bldrx/backups/<timestamp>/...` before writing.
         - git_commit: if True and `dest` is a git repo, stage & commit changes after apply with `git_message`.
         - atomic: if True, perform per-file atomic replace with rollback on failure.
+        - merge: optional strategy to handle existing files (append|prepend|marker|patch). If None, default behavior applies (skip or overwrite with force).
         """
         import subprocess
 
@@ -236,6 +237,7 @@ class Engine:
         global_new_created = []
 
         # Walk files
+        BINARY_SIZE_THRESHOLD = 1_000_000  # bytes; files larger than this are considered large and skipped unless forced
         for p in src.rglob("*"):
             rel = p.relative_to(src)
             target = dest / rel
@@ -245,7 +247,17 @@ class Engine:
             # if it's a template file
             if p.suffix == ".j2":
                 out_path = target.with_suffix("")
-                if out_path.exists() and not force:
+                # detect binary/non-utf8 template file
+                raw = p.read_bytes()
+                try:
+                    raw.decode('utf-8')
+                except Exception:
+                    if dry_run:
+                        yield (str(out_path), "would-skip-binary")
+                    else:
+                        yield (str(out_path), "skipped-binary")
+                    continue
+                if out_path.exists() and not force and not merge:
                     yield (str(out_path), "skipped")
                     continue
                 # Render using the selected template src as the loader root so that
@@ -259,6 +271,31 @@ class Engine:
                     yield (str(out_path), "would-render")
                     continue
 
+                # Merge handling: if merge strategy provided and target exists, compute merged text
+                if merge and out_path.exists():
+                    existing_text = out_path.read_text(encoding='utf-8')
+                    if merge == 'append':
+                        merged_text = existing_text.rstrip('\r\n') + '\n' + text
+                    elif merge == 'prepend':
+                        merged_text = text + '\n' + existing_text
+                    elif merge == 'marker':
+                        # use target filename (without .j2) as marker identifier
+                        marker_name = out_path.name
+                        start = f"<!-- bldrx:start:{marker_name} -->"
+                        end = f"<!-- bldrx:end:{marker_name} -->"
+                        if start in existing_text and end in existing_text:
+                            pre, rest = existing_text.split(start, 1)
+                            _, post = rest.split(end, 1)
+                            merged_text = pre + start + '\n' + text + '\n' + end + post
+                        else:
+                            # fallback to append if no markers found
+                            merged_text = existing_text.rstrip('\r\n') + '\n' + text
+                    else:
+                        # unknown merge strategy: fall back to overwrite
+                        merged_text = text
+                else:
+                    merged_text = text
+
                 # perform atomic write/replace if requested
                 if atomic:
                     ts = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -266,7 +303,8 @@ class Engine:
                     tmp_path = out_path.parent / tmp_name
                     # write to temp file in same dir (ensures os.replace is atomic)
                     out_path.parent.mkdir(parents=True, exist_ok=True)
-                    tmp_path.write_text(text, encoding="utf-8")
+                    # write merged text if merge applied
+                    tmp_path.write_text(merged_text, encoding="utf-8")
                     replaced = []  # list of tuples (final_path, backup_path or None)
                     new_created = []
                     try:
@@ -329,8 +367,24 @@ class Engine:
                     yield (str(out_path), "rendered")
             else:
                 # raw file
-                if target.exists() and not force:
+                if target.exists() and not force and not merge:
                     yield (str(target), "skipped")
+                    continue
+                # detect large or binary raw files
+                size = p.stat().st_size
+                is_binary = False
+                try:
+                    with p.open('rb') as fh:
+                        head = fh.read(1024)
+                        if b"\x00" in head:
+                            is_binary = True
+                except Exception:
+                    is_binary = True
+                if (is_binary or size > BINARY_SIZE_THRESHOLD) and not force:
+                    if dry_run:
+                        yield (str(target), "would-skip-large" if size > BINARY_SIZE_THRESHOLD else "would-skip-binary")
+                    else:
+                        yield (str(target), "skipped-large" if size > BINARY_SIZE_THRESHOLD else "skipped-binary")
                     continue
                 if dry_run:
                     yield (str(target), "would-copy")

@@ -304,6 +304,83 @@ def manifest_create(template_name, templates_dir, output, do_sign, key):
         click.echo(str(e))
         raise SystemExit(1)
 
+
+@cli.group('catalog')
+def catalog_group():
+    """Template catalog (publish/search/info/remove)"""
+    pass
+
+
+@catalog_group.command('publish')
+@click.argument('src')
+@click.option('--name', default=None)
+@click.option('--version', default='0.0.0')
+@click.option('--description', default='')
+@click.option('--tags', default='', help='Comma-separated tags')
+@click.option('--sign', 'do_sign', is_flag=True, help='Sign manifest with HMAC using BLDRX_MANIFEST_KEY or --key')
+@click.option('--key', default=None, help='Explicit HMAC key to use for signing')
+@click.option('--force', is_flag=True, help='Overwrite existing catalog entry')
+def catalog_publish(src, name, version, description, tags, do_sign, key, force):
+    engine = Engine()
+    from .registry import Registry
+    r = Registry()
+    try:
+        meta = r.publish(Path(src), name=name, version=version, description=description, tags=[t for t in tags.split(',') if t], force=force, sign=do_sign, key=key)
+        import json
+        click.echo('Published:')
+        click.echo(json.dumps(meta, indent=2))
+    except Exception as e:
+        import traceback
+        click.echo(f"ERROR: {type(e).__name__}: {e}")
+        click.echo(''.join(traceback.format_exception(e, e, e.__traceback__)))
+        raise SystemExit(1)
+
+
+@catalog_group.command('search')
+@click.argument('query', default='', required=False)
+def catalog_search(query):
+    from .registry import Registry
+    r = Registry()
+    res = r.search(query)
+    import json
+    click.echo(json.dumps(res, indent=2))
+
+
+@catalog_group.command('info')
+@click.argument('name')
+@click.option('--version', default=None)
+def catalog_info(name, version):
+    from .registry import Registry
+    r = Registry()
+    try:
+        e = r.get(name, version=version)
+        import json
+        click.echo(json.dumps(e, indent=2))
+    except KeyError as ke:
+        click.echo(str(ke))
+        raise SystemExit(1)
+
+
+@catalog_group.command('remove')
+@click.argument('name')
+@click.option('--version', default=None)
+@click.option('--yes', is_flag=True, help='Skip confirmation')
+def catalog_remove(name, version, yes):
+    if not yes:
+        confirm = click.confirm(f"Are you sure you want to remove catalog entry '{name}'{' version '+version if version else ''}?")
+        if not confirm:
+            click.echo('Aborted.')
+            raise SystemExit(1)
+    from .registry import Registry
+    r = Registry()
+    try:
+        removed = r.remove(name, version=version)
+        import json
+        click.echo(json.dumps(removed, indent=2))
+    except KeyError as ke:
+        click.echo(str(ke))
+        raise SystemExit(1)
+
 @cli.command('preview-template')
 @click.argument('template_name')
 @click.option('--file', 'file_path', default=None, help='Relative template file path to preview (e.g., README.md.j2)')

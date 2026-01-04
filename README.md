@@ -158,6 +158,24 @@ bldrx manifest create cool --sign
 bldrx manifest create cool --output /tmp/cool-manifest.json
 ```
 
+Catalog (local)
+
+- Publish a template metadata entry into your local catalog/registry:
+
+```bash
+# publish a local template directory as `cool` version 1.0.0
+bldrx catalog publish ./my-template --name cool --version 1.0.0 --description "Cool template" --tags "ci,github"
+
+# search the local catalog
+bldrx catalog search ci
+
+# show info for a specific template
+bldrx catalog info cool
+
+# remove an entry
+bldrx catalog remove cool --yes
+```
+
 Remote fetching (local archives, HTTP, Git)
 
 - `Engine.fetch_remote_template(url, name, force=True)` supports local `file://` archives (`.tar.gz`, `.tgz`, `.zip`) and directories, HTTP(S) downloads, and `git+` or Git remote URLs (shallow `git clone`).

@@ -15,6 +15,7 @@ All notable changes to this project are documented in this file.
 - Remote template fetching with sandbox: added `Engine.fetch_remote_template()` to fetch and extract local `file://` tar/zip archives into the user templates dir using a secure sandbox (prevents path traversal). Optionally runs manifest verification after extraction. Tests added (`tests/test_remote_fetch.py`).
 - Manifest generation & registry CLI: added `Engine.generate_manifest()` and `bldrx manifest create` to generate `bldrx-manifest.json` files for templates, optionally sign them with HMAC (`--sign`) using `BLDRX_MANIFEST_KEY`, and aid template registry workflows (tests added `tests/test_manifest_registry.py`).
 - Plugin system & remote sources: implemented — added a `PluginManager` to install/load simple Python plugins from `~/.bldrx/plugins` and CLI helpers `bldrx plugin install/list/remove`. Added HTTP(S) download and `git clone` support to `Engine.fetch_remote_template()` with sandboxed extraction and optional manifest verification. Tests added (`tests/test_plugins.py`, network calls mocked where appropriate).
+- Template catalog CLI: added `bldrx catalog publish/search/info/remove` for a simple local template catalog format stored under `BLDRX_REGISTRY_DIR` (default: `~/.bldrx/registry`). Useful as a local index for sharing, searching, and publishing templates. Tests added (`tests/test_catalog.py`).
 
 ## 2026-01-04 — Summary of implemented features & fixes
 

@@ -2,6 +2,20 @@
 
 All notable changes to this project are documented in this file.
 
+## Unreleased — Planned improvements (Top priorities)
+
+- CI: Added a `type-check` job using `mypy` to run static typing checks against the `bldrx` package; follow-up work will add stricter mypy settings and annotate core modules.  
+
+## 2026-01-05 — 0.1.6
+
+- CI:
+  - Expanded the test matrix to include **Windows** (`windows-latest`) and **macOS** (`macos-latest`) runners for the `test` and `validate-templates` jobs to improve cross-platform coverage; artifact names were updated to include the OS to avoid upload conflicts.
+  - Added a follow-up task to enable static type checking (mypy/pyright), coverage reporting, and security scanning in CI.
+- Docs & packaging:
+  - Updated `README.md` with PyPI installation instructions (`pip` and `pipx`) and added a PyPI version badge and link to the project metadata.
+- Project management:
+  - Updated `PROJECT_OUTLINE.md` and TODO list to reflect the CI updates and next steps.
+
 ## 2026-01-05 — 0.1.5
 
 - Hidden easter-egg:
@@ -37,11 +51,6 @@ All notable changes to this project are documented in this file.
   - Added `docs/TEMPLATES.md` describing the license templates and usage.
   - CLI: added `--license` flag to `bldrx new` and `bldrx add-templates` to conveniently include a chosen license template by identifier (e.g., `--license MIT`).
 
-
-## Unreleased — Planned improvements (Top priorities)
-
-- CI: Expand the test matrix to include **Windows** (`windows-latest`) and **macOS** (`macos-latest`) runners for the main `test` and `validate-templates` jobs; artifact names were changed to include the OS to avoid upload conflicts. This improves cross-platform coverage and catches platform-specific issues early in CI.  
-- CI: Add follow-up work to enable type-checking, security scanning, and coverage reporting as separate jobs (see TODO list).
 
 ## 2026-01-04 — 0.1.1
 

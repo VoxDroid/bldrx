@@ -1,14 +1,25 @@
+from datetime import datetime
 from pathlib import Path
 
 import click
 
+from . import __version__
 from .engine import Engine
 
 
 @click.group()
-def cli():
+@click.version_option(__version__)
+@click.option(
+    "--developer-metadata",
+    "developer_metadata",
+    is_flag=True,
+    help="Include developer metadata (bldrx_version, dev_timestamp) when rendering templates",
+)
+@click.pass_context
+def cli(ctx, developer_metadata):
     """bldrx - project scaffold & template injector"""
-    pass
+    ctx.ensure_object(dict)
+    ctx.obj["developer_metadata"] = developer_metadata
 
 
 @cli.command()
@@ -79,7 +90,9 @@ def cli():
     is_flag=True,
     help="Verify template integrity using bldrx-manifest.json before applying",
 )
+@click.pass_context
 def new(
+    ctx,
     project_name,
     templates,
     project_type,
@@ -127,6 +140,11 @@ def new(
         "email": email or "",
         "github_username": github_username or "",
     }
+    # Attach developer metadata if global flag set
+    if ctx.obj.get("developer_metadata"):
+        metadata["developer"] = True
+        metadata["bldrx_version"] = __version__
+        metadata["dev_timestamp"] = datetime.utcnow().isoformat() + "Z"
     # parse extra metadata KEY=VAL
     for item in meta:
         if "=" in item:
@@ -146,32 +164,113 @@ def new(
     # Inject license template if requested
     if license_id:
         lic_template = f"licenses/{license_id}"
+        # Validate and try fuzzy matches
+        # Gather actual license subtemplates from user templates and package templates
+        license_roots = []
+        if (engine.user_templates_root / "licenses").exists():
+            license_roots.append(engine.user_templates_root / "licenses")
+        if (engine.package_templates_root / "licenses").exists():
+            license_roots.append(engine.package_templates_root / "licenses")
+        available = []
+        for root in license_roots:
+            for child in root.iterdir():
+                if child.is_dir():
+                    available.append(f"licenses/{child.name}")
+        available = sorted(set(available))
+        # Replace any placeholder in `templates` with the resolved `lic_template` and de-duplicate
+        placeholder = f"licenses/{license_id}"
+        templates = [(lic_template if t == placeholder else t) for t in templates]
+        seen = set()
+        new_templates = []
+        for t in templates:
+            if t not in seen:
+                new_templates.append(t)
+                seen.add(t)
+        templates = new_templates
+        if lic_template not in available:
+            lname = license_id.lower()
+            matches = [
+                t
+                for t in available
+                if t.startswith("licenses/") and lname in t.split("/", 1)[1].lower()
+            ]
+            if len(matches) >= 1:
+                if len(matches) > 1:
+                    click.echo(
+                        f"Multiple license templates match '{license_id}'; choosing first match: {matches[0]}"
+                    )
+                lic_template = matches[0]
+                click.echo(f"Using license template: {lic_template}")
+            else:
+                license_names = [
+                    t.split("/", 1)[1] for t in available if t.startswith("licenses/")
+                ]
+                click.echo(
+                    f"License '{license_id}' not found. Available licenses: {', '.join(license_names)}"
+                )
+                raise SystemExit(1)
         if lic_template not in templates:
             templates.append(lic_template)
 
+    # Final sanity: resolve missing templates (e.g., unresolved license placeholders) before applying
+    cleaned = []
     for t in templates:
-        click.echo(f"Applying template: {t}")
-        if dry_run and as_json:
-            preview = engine.preview_apply(
-                t, dest, metadata, force=force, templates_dir=None
+        try:
+            engine._find_template_src(t, None)
+            cleaned.append(t)
+        except FileNotFoundError:
+            # try to resolve license placeholders to an actual sub-template
+            if t.startswith("licenses/"):
+                lname = t.split("/", 1)[1].lower()
+                license_roots = []
+                if (engine.user_templates_root / "licenses").exists():
+                    license_roots.append(engine.user_templates_root / "licenses")
+                if (engine.package_templates_root / "licenses").exists():
+                    license_roots.append(engine.package_templates_root / "licenses")
+                matches = []
+                for root in license_roots:
+                    for child in root.iterdir():
+                        if child.is_dir() and lname in child.name.lower():
+                            matches.append(f"licenses/{child.name}")
+                if matches:
+                    cleaned.append(matches[0])
+                    click.echo(f"Resolved '{t}' to '{matches[0]}'")
+                    continue
+            click.echo(
+                f"Template '{t}' not found in provided templates dir, user templates, or package templates"
             )
-            all_actions.extend(preview)
-            for e in preview:
-                click.echo(f"  {e['action']}: {e['path']}")
-        else:
-            for path, status in engine.apply_template(
-                t,
-                dest,
-                metadata,
-                force=force,
-                dry_run=dry_run,
-                atomic=True,
-                merge=merge_strategy,
-                verify=verify_integrity,
-                only_files=only_list,
-                except_files=exclude_list,
-            ):
-                click.echo(f"  {status}: {path}")
+            raise SystemExit(1)
+
+    for t in cleaned:
+        click.echo(f"Applying template: {t}")
+        try:
+            if dry_run and as_json:
+                preview = engine.preview_apply(
+                    t, dest, metadata, force=force, templates_dir=None
+                )
+                all_actions.extend(preview)
+                for e in preview:
+                    click.echo(f"  {e['action']}: {e['path']}")
+            else:
+                for path, status in engine.apply_template(
+                    t,
+                    dest,
+                    metadata,
+                    force=force,
+                    dry_run=dry_run,
+                    atomic=True,
+                    merge=merge_strategy,
+                    verify=verify_integrity,
+                    only_files=only_list,
+                    except_files=exclude_list,
+                ):
+                    click.echo(f"  {status}: {path}")
+        except FileNotFoundError as e:
+            click.echo(str(e))
+            raise SystemExit(1)
+        except Exception as e:
+            click.echo(f"ERROR applying template {t}: {e}")
+            raise SystemExit(1)
     if dry_run and as_json:
         import json
 
@@ -277,7 +376,9 @@ def list_templates(as_json, templates_dir, details):
     is_flag=True,
     help="Verify template integrity using bldrx-manifest.json before applying",
 )
+@click.pass_context
 def add_templates(
+    ctx,
     project_path,
     templates,
     templates_dir,
@@ -320,6 +421,11 @@ def add_templates(
         "email": email or "",
         "github_username": github_username or "",
     }
+    # Attach developer metadata if global flag set
+    if ctx.obj.get("developer_metadata"):
+        metadata["developer"] = True
+        metadata["bldrx_version"] = __version__
+        metadata["dev_timestamp"] = datetime.utcnow().isoformat() + "Z"
     # parse extra metadata
     for item in meta:
         if "=" in item:
@@ -338,32 +444,121 @@ def add_templates(
     # Inject license template if requested
     if license_id:
         lic_template = f"licenses/{license_id}"
+        # validate and fuzzy match against available templates when necessary
+        # gather actual license subtemplates from templates dir, user templates, and package templates
+        license_roots = []
+        if templates_dir:
+            td_licenses = Path(templates_dir) / "licenses"
+            if td_licenses.exists():
+                license_roots.append(td_licenses)
+        if (engine.user_templates_root / "licenses").exists():
+            license_roots.append(engine.user_templates_root / "licenses")
+        if (engine.package_templates_root / "licenses").exists():
+            license_roots.append(engine.package_templates_root / "licenses")
+        available = []
+        for root in license_roots:
+            for child in root.iterdir():
+                if child.is_dir():
+                    available.append(f"licenses/{child.name}")
+        available = sorted(set(available))
+        # Replace any placeholder in `templates` with the resolved `lic_template` and de-duplicate
+        placeholder = f"licenses/{license_id}"
+        templates = [(lic_template if t == placeholder else t) for t in templates]
+        seen = set()
+        new_templates = []
+        for t in templates:
+            if t not in seen:
+                new_templates.append(t)
+                seen.add(t)
+        templates = new_templates
+        if lic_template not in available:
+            lname = license_id.lower()
+            matches = [
+                t
+                for t in available
+                if t.startswith("licenses/") and lname in t.split("/", 1)[1].lower()
+            ]
+            if len(matches) >= 1:
+                if len(matches) > 1:
+                    click.echo(
+                        f"Multiple license templates match '{license_id}'; choosing first match: {matches[0]}"
+                    )
+                lic_template = matches[0]
+                click.echo(f"Using license template: {lic_template}")
+            else:
+                license_names = [
+                    t.split("/", 1)[1] for t in available if t.startswith("licenses/")
+                ]
+                click.echo(
+                    f"License '{license_id}' not found. Available licenses: {', '.join(license_names)}"
+                )
+                raise SystemExit(1)
         if lic_template not in templates:
             templates.append(lic_template)
 
+    # Final sanity: resolve missing templates (e.g., unresolved license placeholders) before applying
+    cleaned = []
     for t in templates:
-        click.echo(f"Applying template: {t}")
-        if dry_run and as_json:
-            preview = engine.preview_apply(
-                t, dest, metadata, force=force, templates_dir=templates_dir
+        try:
+            engine._find_template_src(t, templates_dir)
+            cleaned.append(t)
+        except FileNotFoundError:
+            # try to resolve license placeholders to an actual sub-template
+            if t.startswith("licenses/"):
+                lname = t.split("/", 1)[1].lower()
+                license_roots = []
+                if templates_dir:
+                    td_licenses = Path(templates_dir) / "licenses"
+                    if td_licenses.exists():
+                        license_roots.append(td_licenses)
+                if (engine.user_templates_root / "licenses").exists():
+                    license_roots.append(engine.user_templates_root / "licenses")
+                if (engine.package_templates_root / "licenses").exists():
+                    license_roots.append(engine.package_templates_root / "licenses")
+                matches = []
+                for root in license_roots:
+                    for child in root.iterdir():
+                        if child.is_dir() and lname in child.name.lower():
+                            matches.append(f"licenses/{child.name}")
+                if matches:
+                    cleaned.append(matches[0])
+                    click.echo(f"Resolved '{t}' to '{matches[0]}'")
+                    continue
+            click.echo(
+                f"Template '{t}' not found in provided templates dir, user templates, or package templates"
             )
-            all_actions.extend(preview)
-            for e in preview:
-                click.echo(f"  {e['action']}: {e['path']}")
-        else:
-            for path, status in engine.apply_template(
-                t,
-                dest,
-                metadata,
-                force=force,
-                dry_run=dry_run,
-                templates_dir=templates_dir,
-                atomic=True,
-                merge=merge_strategy,
-                only_files=only_list,
-                except_files=exclude_list,
-            ):
-                click.echo(f"  {status}: {path}")
+            raise SystemExit(1)
+
+    for t in cleaned:
+        click.echo(f"Applying template: {t}")
+        try:
+            if dry_run and as_json:
+                preview = engine.preview_apply(
+                    t, dest, metadata, force=force, templates_dir=templates_dir
+                )
+                all_actions.extend(preview)
+                for e in preview:
+                    click.echo(f"  {e['action']}: {e['path']}")
+            else:
+                for path, status in engine.apply_template(
+                    t,
+                    dest,
+                    metadata,
+                    force=force,
+                    dry_run=dry_run,
+                    templates_dir=templates_dir,
+                    atomic=True,
+                    merge=merge_strategy,
+                    only_files=only_list,
+                    except_files=exclude_list,
+                ):
+                    click.echo(f"  {status}: {path}")
+        except FileNotFoundError as e:
+            click.echo(str(e))
+            raise SystemExit(1)
+        except Exception as e:
+            click.echo(f"ERROR applying template {t}: {e}")
+            raise SystemExit(1)
     if dry_run and as_json:
         import json
 

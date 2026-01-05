@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented in this file.
 
+## 2026-01-05 — 0.1.4
+
+- CLI & UX improvements:
+  - Added `--version` support (`bldrx --version`) and a global `--developer-metadata` flag to inject developer metadata (`bldrx_version`, `dev_timestamp`) into rendered templates for debugging and provenance.
+  - Improved `--license` handling: fuzzy matching for license identifiers (e.g., `--license Apache` now resolves to `licenses/Apache-2.0` when appropriate), deterministic resolution when multiple matches are present (first match is chosen with a warning), and clearer errors when no license is found.
+  - Added robust error handling around applying templates: unresolved placeholders and missing templates are reported with friendly messages instead of tracebacks.
+- Docs & tests:
+  - Documented fuzzy license behavior and developer metadata flag in `docs/TEMPLATES.md`.
+  - Added tests for `--version` and license not-found/fuzzy-match behaviors (`tests/test_cli_version.py`, `tests/test_cli_license_not_found.py`).
+
 ## 2026-01-05 — 0.1.3
 
 - Documentation & developer tooling:

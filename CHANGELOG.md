@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## 2026-01-05 — 0.1.5
+
+- Hidden easter-egg:
+  - Added a *hidden* global `--whoami` flag that prints a small developer attribution message ("Developed by VoxDroid — https://github.com/VoxDroid") and exits cleanly. The option is intentionally hidden from `--help` to act as an easter egg. Tests were added to verify behavior (`tests/test_cli_whoami.py`).
+
 ## 2026-01-05 — 0.1.4
 
 - CLI & UX improvements:

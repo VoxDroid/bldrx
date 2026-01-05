@@ -7,6 +7,14 @@ from . import __version__
 from .engine import Engine
 
 
+def _whoami_callback(ctx, param, value):
+    # Use callback to handle the hidden easter egg cleanly during parsing
+    if not value or getattr(ctx, "resilient_parsing", False):
+        return value
+    click.echo("Developed by VoxDroid — https://github.com/VoxDroid")
+    ctx.exit(0)
+
+
 @click.group()
 @click.version_option(__version__)
 @click.option(
@@ -15,9 +23,17 @@ from .engine import Engine
     is_flag=True,
     help="Include developer metadata (bldrx_version, dev_timestamp) when rendering templates",
 )
+@click.option(
+    "--whoami",
+    is_flag=True,
+    hidden=True,
+    callback=_whoami_callback,
+    help="(hidden) Show developer attribution",
+)
 @click.pass_context
-def cli(ctx, developer_metadata):
+def cli(ctx, developer_metadata, whoami):
     """bldrx - project scaffold & template injector"""
+    # Note: the --whoami option is handled via callback and will exit before reaching here
     ctx.ensure_object(dict)
     ctx.obj["developer_metadata"] = developer_metadata
 

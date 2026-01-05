@@ -1,6 +1,7 @@
 # bldrx — Project scaffolding & template injector
 
 [![CI](https://img.shields.io/github/actions/workflow/status/VoxDroid/bldrx/ci.yml?branch=main&style=flat-square)](https://github.com/VoxDroid/bldrx/actions)
+[![PyPI - Version](https://img.shields.io/pypi/v/bldrx?style=flat-square)](https://pypi.org/project/bldrx)
 [![PyPI - License](https://img.shields.io/pypi/l/bldrx?style=flat-square)](https://opensource.org/licenses/MIT)
 [![Python Versions](https://img.shields.io/pypi/pyversions/bldrx?style=flat-square)](https://pypi.org/project/bldrx)
 
@@ -20,7 +21,20 @@ This README contains quick installation and usage instructions. For design detai
 
 ## Quickstart
 
-Get up and running quickly (editable mode recommended for development):
+Get up and running quickly:
+
+**Install from PyPI (recommended for most users):**
+
+```bash
+pip install -U bldrx
+# verify installation
+bldrx --version
+# optional: install globally in an isolated environment using pipx
+# (requires pipx to be installed)
+pipx install bldrx
+```
+
+**Developer / editable install (recommended for development):**
 
 ```bash
 python -m venv .venv
@@ -167,6 +181,7 @@ Please run `pre-commit` before opening a PR to keep the codebase consistent.
 - **Owner:** VoxDroid
 - **GitHub:** https://github.com/VoxDroid
 - **Repository:** https://github.com/VoxDroid/bldrx
+- **PyPI:** https://pypi.org/project/bldrx
 - **Contact:** izeno.contact@gmail.com
 
 ---

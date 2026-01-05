@@ -40,7 +40,8 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased — Planned improvements (Top priorities)
 
-- No unreleased changes at time of release.
+- CI: Expand the test matrix to include **Windows** (`windows-latest`) and **macOS** (`macos-latest`) runners for the main `test` and `validate-templates` jobs; artifact names were changed to include the OS to avoid upload conflicts. This improves cross-platform coverage and catches platform-specific issues early in CI.  
+- CI: Add follow-up work to enable type-checking, security scanning, and coverage reporting as separate jobs (see TODO list).
 
 ## 2026-01-04 — 0.1.1
 

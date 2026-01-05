@@ -7,3 +7,5 @@ ruff
 isort
 build
 twine
+mypy
+pyright

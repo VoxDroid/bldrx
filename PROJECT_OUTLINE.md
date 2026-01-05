@@ -53,7 +53,7 @@
 | Concurrency & locking for user templates dir | Implemented | Per-template lockfiles to serialize installs/uninstalls; Timeout and errors handled; tests added |
 | Transactional apply & atomic replace | Implemented | Per-file atomic replace using temp files in destination dir; rollback on failure; supports `--atomic` and `backup`; tests added (see `tests/test_transactional_apply.py`) |
 | Tests | Implemented | Unit tests for engine, CLI, templates, user templates, docs included |
-| CI (tests on push/PR) | Implemented | `.github/workflows/ci.yml` runs pytest matrix (3.9–3.11), a `type-check` mypy job, and a `validate-templates` job which validates templates and manifests. Matrix has been expanded to include `windows-latest` and `macos-latest` to improve cross-platform coverage. |
+| CI (tests on push/PR) | Implemented | `.github/workflows/ci.yml` runs pytest matrix (3.9–3.11), a `type-check` job using `pyright` (configured by `pyrightconfig.json`), and a `validate-templates` job which validates templates and manifests. Matrix has been expanded to include `windows-latest` and `macos-latest` to improve cross-platform coverage. A local `mypy` pre-commit hook provides fast developer feedback. |
 | CI artifact build/publish on tag | Implemented | `build-artifacts` job builds sdist/wheel on tag and uploads as artifacts. |
 | Analytics/logging (opt-in) | Implemented | `bldrx telemetry` CLI group and `bldrx.telemetry` helper; opt-in only (BLDRX_ENABLE_TELEMETRY). |
 | Docs for advanced scenarios | Implemented | Added `docs/ADVANCED_SCENARIOS.md` covering manifests, registry, CI, plugins, and telemetry. |

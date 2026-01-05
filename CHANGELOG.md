@@ -4,7 +4,8 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased — Planned improvements (Top priorities)
 
-- CI: Added a `type-check` job using `mypy` to run static typing checks against the `bldrx` package; follow-up work will add stricter mypy settings and annotate core modules.  
+- CI: Added a `type-check` job using `pyright` to run static typing checks against the `bldrx` package (configured via `pyrightconfig.json`).
+- Dev: Kept a local `mypy` pre-commit hook (runs `python -m mypy bldrx --ignore-missing-imports`) for fast developer feedback; CI uses `pyright` as a fast, robust type checker.
 
 ## 2026-01-05 — 0.1.6
 

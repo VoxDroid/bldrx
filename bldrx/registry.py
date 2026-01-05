@@ -2,7 +2,7 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
 
 def _default_registry_dir() -> Path:
@@ -17,7 +17,7 @@ def _default_registry_dir() -> Path:
 class Registry:
     """Simple local JSON-backed template registry used by the `catalog` CLI group."""
 
-    def __init__(self, root: Path = None):
+    def __init__(self, root: Optional[Path] = None):
         env = os.getenv("BLDRX_REGISTRY_DIR")
         if root:
             self.root = Path(root)
@@ -34,20 +34,20 @@ class Registry:
     def publish(
         self,
         src: Path,
-        name: str = None,
+        name: Optional[str] = None,
         version: str = "0.0.0",
         description: str = "",
-        tags: Optional[list] = None,
+        tags: Optional[List[str]] = None,
         force: bool = False,
         sign: bool = False,
         key: Optional[str] = None,
-    ) -> dict:
+    ) -> Dict[str, Any]:
         """Publish a local template directory into the registry. Returns the metadata dict that was written to disk."""
         src = Path(src)
         if not src.exists():
             raise FileNotFoundError(f"Source '{src}' not found")
         # compute manifest
-        files = {}
+        files: Dict[str, str] = {}
         import hashlib
         import hmac
 
@@ -58,7 +58,7 @@ class Registry:
             h = hashlib.sha256()
             h.update(p.read_bytes())
             files[rel] = h.hexdigest()
-        manifest = {"files": files}
+        manifest: Dict[str, Any] = {"files": files}
         if sign:
             use_key = key or os.getenv("BLDRX_MANIFEST_KEY")
             if not use_key:
@@ -71,8 +71,9 @@ class Registry:
             manifest["hmac"] = hmac.new(
                 use_key.encode("utf-8"), canonical, hashlib.sha256
             ).hexdigest()
+        entry_name: str = name or src.name
         meta = {
-            "name": (name or src.name),
+            "name": entry_name,
             "version": version,
             "description": description,
             "tags": tags or [],
@@ -80,25 +81,25 @@ class Registry:
             "source": str(src.resolve()),
             "published_at": datetime.utcnow().isoformat() + "Z",
         }
-        path = self._entry_path(meta["name"], version)
+        path = self._entry_path(entry_name, version)
         if path.exists() and not force:
             raise FileExistsError(f"Catalog entry already exists: {path}")
         path.write_text(json.dumps(meta, indent=2), encoding="utf-8")
         return meta
 
-    def list_entries(self) -> list:
+    def list_entries(self) -> List[Dict[str, Any]]:
         """Return list of registry entries (loaded from JSON files)."""
-        out = []
+        out: List[Dict[str, Any]] = []
         for p in sorted(self.root.iterdir()):
             if p.suffix == ".json":
                 out.append(json.loads(p.read_text(encoding="utf-8")))
         return out
 
-    def search(self, q: Optional[str] = None) -> list:
+    def search(self, q: Optional[str] = None) -> List[Dict[str, Any]]:
         """Search entries by name, description or tags (case-insensitive)."""
         q = q or ""
         ql = q.lower()
-        res = []
+        res: List[Dict[str, Any]] = []
         for e in self.list_entries():
             if (
                 ql in e.get("name", "").lower()
@@ -108,7 +109,7 @@ class Registry:
                 res.append(e)
         return res
 
-    def get(self, name: str, version: Optional[str] = None) -> dict:
+    def get(self, name: str, version: Optional[str] = None) -> Dict[str, Any]:
         """Return metadata for `name` (exact match). If `version` provided, return the specific version or raise KeyError."""
         # if version provided, exact match; else first matching name
         for e in self.list_entries():
@@ -118,9 +119,9 @@ class Registry:
                 return e
         raise KeyError(f"Catalog entry '{name}' not found")
 
-    def remove(self, name: str, version: Optional[str] = None) -> list:
+    def remove(self, name: str, version: Optional[str] = None) -> List[Dict[str, Any]]:
         """Remove matching entries and return list of removed metadata objects."""
-        removed = []
+        removed: List[Dict[str, Any]] = []
         for p in list(self.root.iterdir()):
             if p.suffix != ".json":
                 continue

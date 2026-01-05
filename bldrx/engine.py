@@ -4,7 +4,7 @@ import os
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Generator, List, Optional, Tuple
 
 from .renderer import Renderer
 
@@ -21,9 +21,9 @@ def _default_user_templates_dir() -> Path:
 class Engine:
     def __init__(
         self,
-        templates_root: Path = None,
-        user_templates_root: Path = None,
-        user_plugins_root: Path = None,
+        templates_root: Optional[Path] = None,
+        user_templates_root: Optional[Path] = None,
+        user_plugins_root: Optional[Path] = None,
     ):
         # packaged templates root (inside the package)
         self.package_templates_root = templates_root or (
@@ -372,19 +372,19 @@ class Engine:
         self,
         template_name: str,
         dest: Path,
-        metadata: dict,
+        metadata: Optional[Dict[str, Any]] = None,
         force: bool = False,
-        templates_dir: Path = None,
-    ):
+        templates_dir: Optional[Path] = None,
+    ) -> List[Dict[str, Any]]:
         """Return a structured preview of applying the template (non-destructive).
 
         Each entry: {'path': str, 'action': 'would-render'|'would-copy'|'skipped'}
         """
-        out = []
+        out: List[Dict[str, Any]] = []
         for path, status in self.apply_template(
             template_name,
             dest,
-            metadata,
+            metadata or {},
             force=force,
             dry_run=True,
             templates_dir=templates_dir,
@@ -528,19 +528,19 @@ class Engine:
         self,
         template_name: str,
         dest: Path,
-        metadata: dict,
+        metadata: Optional[Dict[str, Any]] = None,
         force: bool = False,
         dry_run: bool = False,
-        templates_dir: Path = None,
+        templates_dir: Optional[Path] = None,
         backup: bool = False,
         git_commit: bool = False,
-        git_message: str = None,
+        git_message: Optional[str] = None,
         atomic: bool = False,
-        merge: str = None,
+        merge: Optional[str] = None,
         verify: bool = False,
-        only_files: list = None,
-        except_files: list = None,
-    ):
+        only_files: Optional[List[str]] = None,
+        except_files: Optional[List[str]] = None,
+    ) -> Generator[Tuple[str, str], None, None]:
         """Apply the named template into `dest`.
 
         New options:
@@ -565,8 +565,10 @@ class Engine:
         made_changes = False
 
         # Keep global state for atomic replacements so we can rollback across multiple files
-        global_replaced = []  # list of (final_path, backup_path or None)
-        global_new_created = []
+        global_replaced: List[Tuple[Path, Optional[Path]]] = (
+            []
+        )  # list of (final_path, backup_path or None)
+        global_new_created: List[Path] = []
 
         # Verify manifest if requested
         if verify:
@@ -683,16 +685,21 @@ class Engine:
                     out_path.parent.mkdir(parents=True, exist_ok=True)
                     # write merged text if merge applied
                     tmp_path.write_text(merged_text, encoding="utf-8")
-                    replaced = []  # list of tuples (final_path, backup_path or None)
-                    new_created = []
+                    replaced: List[Tuple[Path, Optional[Path]]] = (
+                        []
+                    )  # list of tuples (final_path, backup_path or None)
+                    new_created: List[Path] = []
                     try:
                         # backup existing if needed
                         if out_path.exists() and backup:
-                            bpath = backups_root / out_path.relative_to(dest)
-                            bpath.parent.mkdir(parents=True, exist_ok=True)
-                            shutil.copy2(out_path, bpath)
-                            replaced.append((out_path, bpath))
-                            global_replaced.append((out_path, bpath))
+                            assert backups_root is not None
+                            bpath_render: Path = backups_root / out_path.relative_to(
+                                dest
+                            )
+                            bpath_render.parent.mkdir(parents=True, exist_ok=True)
+                            shutil.copy2(out_path, bpath_render)
+                            replaced.append((out_path, bpath_render))
+                            global_replaced.append((out_path, bpath_render))
                         else:
                             if out_path.exists():
                                 replaced.append((out_path, None))
@@ -736,6 +743,7 @@ class Engine:
                     # non-atomic path
                     # backup existing
                     if out_path.exists() and backup:
+                        assert backups_root is not None
                         bpath = backups_root / out_path.relative_to(dest)
                         bpath.parent.mkdir(parents=True, exist_ok=True)
                         shutil.copy2(out_path, bpath)
@@ -787,30 +795,31 @@ class Engine:
                     tmp_path = target.parent / tmp_name
                     target.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copy2(p, tmp_path)
-                    replaced = []
-                    new_created = []
+                    replaced_raw: List[Tuple[Path, Optional[Path]]] = []
+                    new_created_raw: List[Path] = []
                     try:
                         if target.exists() and backup:
-                            bpath = backups_root / target.relative_to(dest)
-                            bpath.parent.mkdir(parents=True, exist_ok=True)
-                            shutil.copy2(target, bpath)
-                            replaced.append((target, bpath))
+                            assert backups_root is not None
+                            bpath_copied: Path = backups_root / target.relative_to(dest)
+                            bpath_copied.parent.mkdir(parents=True, exist_ok=True)
+                            shutil.copy2(target, bpath_copied)
+                            replaced_raw.append((target, bpath_copied))
                         else:
                             if target.exists():
-                                replaced.append((target, None))
+                                replaced_raw.append((target, None))
                             else:
-                                new_created.append(target)
+                                new_created_raw.append(target)
                         os.replace(str(tmp_path), str(target))
                         made_changes = True
                         yield (str(target), "copied")
                     except Exception as e:
-                        for fpath, bpath in replaced:
+                        for fpath, bpath in replaced_raw:
                             try:
                                 if bpath is not None and bpath.exists():
                                     os.replace(str(bpath), str(fpath))
                             except Exception:
                                 pass
-                        for fpath in new_created:
+                        for fpath in new_created_raw:
                             try:
                                 if fpath.exists():
                                     fpath.unlink()
@@ -831,9 +840,10 @@ class Engine:
                 else:
                     # backup existing
                     if target.exists() and backup:
-                        bpath = backups_root / target.relative_to(dest)
-                        bpath.parent.mkdir(parents=True, exist_ok=True)
-                        shutil.copy2(target, bpath)
+                        assert backups_root is not None
+                        bpath_backup: Path = backups_root / target.relative_to(dest)
+                        bpath_backup.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(target, bpath_backup)
                     target.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copy2(p, target)
                     made_changes = True
@@ -874,8 +884,8 @@ class Engine:
         dest: Path,
         force: bool = False,
         dry_run: bool = False,
-        templates_dir: Path = None,
-    ):
+        templates_dir: Optional[Path] = None,
+    ) -> Generator[Tuple[str, str], None, None]:
         """Remove files from dest that correspond to files in the template.
         By default does not delete files unless force=True. If dry_run is True, report would-remove without deleting.
         """
@@ -943,11 +953,11 @@ class Engine:
     def install_user_template(
         self,
         src_path: Path,
-        name: str = None,
+        name: Optional[str] = None,
         force: bool = False,
         wrap: bool = False,
         lock_timeout: float = 5.0,
-    ):
+    ) -> Path:
         """Copy a template folder into the user templates directory.
 
         If `wrap` is False (default) the contents of `src_path` are copied into `user_templates/name`.
@@ -994,7 +1004,7 @@ class Engine:
             # release lock always
             self._release_lock(lock_path)
 
-    def uninstall_user_template(self, name: str, force: bool = False):
+    def uninstall_user_template(self, name: str, force: bool = False) -> bool:
         dest = self.user_templates_root / name
         if not dest.exists():
             raise FileNotFoundError(f"User template '{name}' not found")
@@ -1002,8 +1012,12 @@ class Engine:
         return True
 
     def fetch_remote_template(
-        self, url: str, name: str = None, force: bool = False, verify: bool = True
-    ):
+        self,
+        url: str,
+        name: Optional[str] = None,
+        force: bool = False,
+        verify: bool = True,
+    ) -> Path:
         """Fetch a remote template archive or directory and install it into user templates.
 
         Supported sources for this MVP: local file paths and file:// URLs pointing to a directory, .tar.gz/.tgz or .zip archive.

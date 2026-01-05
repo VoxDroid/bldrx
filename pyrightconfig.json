@@ -1,0 +1,6 @@
+{
+  "include": ["bldrx"],
+  "exclude": ["**/node_modules", "**/.venv"],
+  "reportMissingTypeStubs": false,
+  "reportMissingImports": false
+}

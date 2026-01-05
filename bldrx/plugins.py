@@ -114,6 +114,9 @@ class PluginManager:
                 spec = importlib.util.spec_from_file_location(
                     f"bldrx_plugin.{p.stem}", str(mod_file)
                 )
+                # Guard against None spec/loader (myPy safety and runtime checks)
+                if spec is None or spec.loader is None:
+                    continue
                 mod = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(mod)
                 if hasattr(mod, "register"):

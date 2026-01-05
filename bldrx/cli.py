@@ -869,7 +869,7 @@ def catalog_publish(src, name, version, description, tags, do_sign, key, force):
         import traceback
 
         click.echo(f"ERROR: {type(e).__name__}: {e}")
-        click.echo("".join(traceback.format_exception(e, e, e.__traceback__)))
+        click.echo("".join(traceback.format_exception(type(e), e, e.__traceback__)))
         raise SystemExit(1)
 
 

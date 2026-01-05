@@ -2,9 +2,10 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 
-def _default_telemetry_file():
+def _default_telemetry_file() -> Path:
     if os.name == "nt":
         appdata = os.getenv("APPDATA") or Path.home()
         return Path(appdata) / "bldrx" / "telemetry.log"
@@ -20,7 +21,7 @@ class Telemetry:
     - If BLDRX_TELEMETRY_ENDPOINT is set, attempts to POST JSON events to that endpoint (best-effort; failures are ignored).
     """
 
-    def __init__(self, enabled: bool = None, logfile: Path = None):
+    def __init__(self, enabled: Optional[bool] = None, logfile: Optional[Path] = None):
         env = os.getenv("BLDRX_ENABLE_TELEMETRY")
         if enabled is None:
             self.enabled = env == "1"
@@ -47,7 +48,7 @@ class Telemetry:
             "logfile": str(self.logfile),
         }
 
-    def track_event(self, event: str, payload: dict = None):
+    def track_event(self, event: str, payload: Optional[dict] = None) -> bool:
         if not self.enabled:
             return False
         payload = payload or {}

@@ -2,9 +2,30 @@
 
 All notable changes to this project are documented in this file.
 
+## 2026-01-05 — 0.1.3
+
+- Documentation & developer tooling:
+  - Added docstrings and type hints to core modules (`renderer`, `plugins`, `registry`) to improve code clarity and editor support.
+  - Added `.pre-commit-config.yaml` with `black`, `isort`, and `ruff` to standardize formatting and linting.
+  - CI updated to run pre-commit checks on push and pull requests.
+- Tests:
+  - Added tests to verify package version and basic rendering behavior: `tests/test_version.py`, `tests/test_renderer.py`, `tests/test_docstrings.py`.
+- Packaging:
+  - Bumped package version to **0.1.3** and updated `pyproject.toml` and `bldrx.__version__`.
+- Misc:
+  - Updated `README.md` contributing section with pre-commit usage.
+- Type annotations & tests:
+  - Added additional type annotations and docstrings to `bldrx.engine` public methods to improve clarity and enable static analysis.
+  - Added tests covering `Engine` behaviors: listing templates, rendering a template file, manifest generation & verification, and dry-run apply previews (`tests/test_engine.py`).
+  - Extended `tests/test_docstrings.py` to assert presence of Engine docstrings.
+  - Added comprehensive license templates (MIT, Apache-2.0, BSD-3-Clause, BSD-2-Clause, ISC, GPL-3.0, AGPL-3.0, LGPL-3.0, MPL-2.0, UNLICENSE, CC0-1.0, Artistic-2.0, EPL-2.0, Boost-1.0) under `bldrx/templates/licenses` with defaults and documentation. (`tests/test_templates_licenses.py` and `tests/test_templates_render.py` added to exercise rendering and validation.)
+  - Added `docs/TEMPLATES.md` describing the license templates and usage.
+  - CLI: added `--license` flag to `bldrx new` and `bldrx add-templates` to conveniently include a chosen license template by identifier (e.g., `--license MIT`).
+
+
 ## Unreleased — Planned improvements (Top priorities)
 
-- No unreleased changes — all planned top-priority improvements have been implemented and released in **0.1.2**. See the 0.1.2 entry for details.
+- No unreleased changes at time of release.
 
 ## 2026-01-04 — 0.1.1
 

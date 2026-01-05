@@ -1,33 +1,45 @@
 # bldrx — Project scaffolding & template injector
 
-bldrx is a developer-first CLI for scaffolding new projects and injecting reusable templates (CI, GitHub meta files, README/license, lint configs) into new or existing repositories.
+[![CI](https://img.shields.io/github/actions/workflow/status/VoxDroid/bldrx/ci.yml?branch=main&style=flat-square)](https://github.com/VoxDroid/bldrx/actions)
+[![PyPI - License](https://img.shields.io/pypi/l/bldrx?style=flat-square)](https://opensource.org/licenses/MIT)
+[![Python Versions](https://img.shields.io/pypi/pyversions/bldrx?style=flat-square)](https://pypi.org/project/bldrx)
 
-This README contains quick installation and usage instructions. For the project prototyping notes and full outline see `PROJECT_OUTLINE.md`.
+bldrx is a small, CLI-first tool to scaffold new projects and inject reusable templates (CI, GitHub meta files, README/license, lint configs) into repos.
+
+This README contains quick installation and usage instructions. For design details and the full project outline see `PROJECT_OUTLINE.md` or `docs/TEMPLATES.md`.
+
+**Table of Contents**
+
+- [Quickstart](#quickstart)
+- [Examples](#examples)
+- [Configuration](#configuration)
+- [Contributing & Support](#contributing--support)
+- [Templates](#templates-expanded)
 
 ---
 
 ## Quickstart
 
-Install (editable mode is recommended during development):
+Get up and running quickly (editable mode recommended for development):
 
 ```bash
 python -m venv .venv
-# macOS / Linux
+# activate (macOS/Linux)
 source .venv/bin/activate
-# Windows PowerShell
+# activate (Windows PowerShell)
 # .\.venv\Scripts\Activate.ps1
 
-python -m pip install --upgrade pip
-python -m pip install -e .
+pip install -U pip
+pip install -e .
 ```
 
-Run tests:
+Run the test suite:
 
 ```bash
-pytest -q -vv
+python -m pytest -q
 ```
 
-Get help:
+Need help? Use:
 
 ```bash
 bldrx --help
@@ -53,6 +65,16 @@ bldrx new mytool --type python-cli --templates python-cli --only README.md,LICEN
 bldrx new mytool --type python-cli --templates python-cli --except docs/EXAMPLE.md
 ```
 
+2.a) Include a license using the convenience `--license` flag:
+
+```bash
+# include the MIT license when scaffolding a new project (dry-run first)
+bldrx new mytool --type python-cli --license MIT --meta author_name="VoxDroid" --meta year=2026 --dry-run
+
+# add a license to an existing project
+bldrx add-templates ./existing-repo --license Apache-2.0 --meta author_name="VoxDroid" --meta year=2026 --dry-run
+```
+
 3) Inject templates into an existing project (preview, dry-run and diff):
 
 ```bash
@@ -71,6 +93,12 @@ bldrx preview-template python-cli
 
 # render a single file with metadata
 bldrx preview-template python-cli --file README.md.j2 --render --meta project_name=demo
+
+# list available license templates
+bldrx preview-template licenses
+
+# render a specific license (MIT)
+bldrx preview-template licenses/MIT --file LICENSE.j2 --render --meta author_name="VoxDroid" --meta year=2026
 ```
 
 5) Manage user templates:
@@ -119,7 +147,20 @@ Config file (planned): support a `.bldrx` TOML/YAML file to store default metada
 ## Contributing & Support
 
 - Contributions are welcome: open issues or PRs. See `CONTRIBUTING.md` template for guidance.
+- Before opening a PR, run `pre-commit` and the test suite locally to catch issues early.
 - For support, open an issue on the repository or contact the project maintainer listed in `pyproject.toml`.
+
+**Developer tooling (quick start):**
+
+- We use `pre-commit` to enforce code style and linting (Black, isort, ruff). To install and enable hooks locally:
+
+```bash
+pip install pre-commit
+pre-commit install
+pre-commit run --all-files
+```
+
+Please run `pre-commit` before opening a PR to keep the codebase consistent.
 
 ## Project metadata
 
@@ -130,21 +171,9 @@ Config file (planned): support a `.bldrx` TOML/YAML file to store default metada
 
 ---
 
-## Implemented features (short checklist)
+## Highlights
 
-- Template rendering with Jinja2 (`StrictUndefined`) and per-template defaults via `ci_metadata.json` ✅
-- Preview & diffs: `bldrx preview-template --render --diff` and JSON previews ✅
-- Dry-run and machine-readable dry-run output (`--dry-run`, `--json`) ✅
-- Template manifests & HMAC signing (`bldrx manifest create --sign`) and verification (`--verify`) ✅
-- Local catalog registry: `bldrx catalog publish/search/info/remove` ✅
-- Atomic/transactional apply, backups, and optional git commit support (`backup=True`, `git_commit=True`) ✅
-- Merge strategies (`--merge` append|prepend|marker) ✅
-- Encoding / binary detection and safe skipping ✅
-- Concurrency & install locking for user templates ✅
-- File inclusion/exclusion filters (`--only` / `--except`) ✅
-- Telemetry opt-in & CLI controls (`bldrx telemetry`) ✅
-- Plugin manager and plugin CLI (install/list/remove) ✅
-- Full test suite and CI validation workflow ✅
+Key implemented features include Jinja2 template rendering with strict undefined checks, preview/diff support, manifest generation and verification, transactional/atomic applies with backups, template filters (`--only`/`--except`), and an extensible plugin system. See `PROJECT_OUTLINE.md` for the full feature list and roadmap.
 
 ---
 
@@ -157,8 +186,8 @@ Below is a comprehensive table with each command, key options, a short descripti
 
 | Command | Key options | Description | Example |
 | --- | --- | --- | --- |
-| `bldrx new <project_name>` | `--type` `--templates` `--author` `--email` `--github-username` `--meta KEY=VAL` `--dry-run` `--json` `--force` `--merge` `--verify` `--only` `--except` | Scaffold a new project from templates. `--templates` overrides type defaults. `--dry-run` shows planned actions. `--only`/`--except` accept comma-separated relative paths (match final rendered paths for `.j2` files). | `bldrx new my-tool --type python-cli --templates python-cli,ci --author "You" --dry-run` |
-| `bldrx add-templates <project_path>` | `--templates` `--templates-dir` `--author` `--email` `--github-username` `--meta` `--dry-run` `--json` `--force` `--merge` `--verify` `--only` `--except` | Inject one or more templates into an existing project. If `--templates` omitted, interactive prompt lists available templates. Use `--only`/`--except` to include or exclude specific template files. | `bldrx add-templates ./repo --templates contributing,ci --dry-run` |
+| `bldrx new <project_name>` | `--type` `--templates` `--license` `--author` `--email` `--github-username` `--meta KEY=VAL` `--dry-run` `--json` `--force` `--merge` `--verify` `--only` `--except` | Scaffold a new project from templates. `--templates` or `--license` can be used to include templates; `--dry-run` shows planned actions. `--only`/`--except` accept comma-separated relative paths (match final rendered paths for `.j2` files). | `bldrx new my-tool --type python-cli --templates python-cli,ci --author "You" --dry-run` |
+| `bldrx add-templates <project_path>` | `--templates` `--license` `--templates-dir` `--author` `--email` `--github-username` `--meta` `--dry-run` `--json` `--force` `--merge` `--verify` `--only` `--except` | Inject one or more templates into an existing project. Use `--license` to conveniently include a license template (e.g., `--license MIT`). If `--templates` omitted, interactive prompt lists available templates. Use `--only`/`--except` to include or exclude specific template files. | `bldrx add-templates ./repo --templates contributing,ci --dry-run` |
 | `bldrx list-templates` | `--details` `--templates-dir` `--json` | List templates from built-in and user sources. `--details` shows files inside templates. | `bldrx list-templates --details` |
 | `bldrx preview-template <template>` | `--file <path>` `--render` `--diff` `--meta KEY=VAL` `--templates-dir` | Show raw template files or their rendered content. `--diff` shows patch/diff against target project when rendering. | `bldrx preview-template python-cli --file README.md.j2 --render --meta project_name=demo` |
 | `bldrx install-template <src_path>` | `--name` `--wrap` `--force` | Install a local template into the user templates directory. `--wrap` preserves the source top folder. | `bldrx install-template ./my-template --name cool` |

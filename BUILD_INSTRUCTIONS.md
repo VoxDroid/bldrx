@@ -49,6 +49,9 @@ bldrx list-templates
 bldrx new demo_project --type python-cli --dry-run
 # Add templates to existing dir (dry-run)
 bldrx add-templates demo_project --templates github,ci --dry-run
+# Include a license using the convenience flag
+bldrx new demo_project --type python-cli --license MIT --meta author_name="VoxDroid" --meta year=2026 --dry-run
+bldrx add-templates demo_project --license Apache-2.0 --meta author_name="VoxDroid" --meta year=2026 --dry-run
 ```
 
 ## User templates examples
@@ -117,8 +120,3 @@ python -c "import bldrx; from pathlib import Path; print(Path(bldrx.__file__).pa
 - Run CLI: `bldrx --help` / `bldrx list-templates`
 
 ---
-
-If you'd like, I can also:
-- Add a `Makefile` or `scripts/` shortcuts for common tasks
-- Add a GitHub Action to build and upload artifacts for tagged releases
-- Add more verification steps (e.g., checking installed wheel contents in CI)

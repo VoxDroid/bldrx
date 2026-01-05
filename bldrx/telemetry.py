@@ -1,14 +1,14 @@
-from pathlib import Path
 import json
 import os
 from datetime import datetime
+from pathlib import Path
 
 
 def _default_telemetry_file():
-    if os.name == 'nt':
-        appdata = os.getenv('APPDATA') or Path.home()
-        return Path(appdata) / 'bldrx' / 'telemetry.log'
-    return Path.home() / '.bldrx' / 'telemetry.log'
+    if os.name == "nt":
+        appdata = os.getenv("APPDATA") or Path.home()
+        return Path(appdata) / "bldrx" / "telemetry.log"
+    return Path.home() / ".bldrx" / "telemetry.log"
 
 
 class Telemetry:
@@ -21,41 +21,45 @@ class Telemetry:
     """
 
     def __init__(self, enabled: bool = None, logfile: Path = None):
-        env = os.getenv('BLDRX_ENABLE_TELEMETRY')
+        env = os.getenv("BLDRX_ENABLE_TELEMETRY")
         if enabled is None:
-            self.enabled = (env == '1')
+            self.enabled = env == "1"
         else:
             self.enabled = bool(enabled)
         self.logfile = Path(logfile) if logfile else _default_telemetry_file()
         # allow endpoint override (if provided, do best-effort POST)
-        self.endpoint = os.getenv('BLDRX_TELEMETRY_ENDPOINT')
+        self.endpoint = os.getenv("BLDRX_TELEMETRY_ENDPOINT")
 
     def enable(self):
-        os.environ['BLDRX_ENABLE_TELEMETRY'] = '1'
+        os.environ["BLDRX_ENABLE_TELEMETRY"] = "1"
         self.enabled = True
         return True
 
     def disable(self):
-        os.environ.pop('BLDRX_ENABLE_TELEMETRY', None)
+        os.environ.pop("BLDRX_ENABLE_TELEMETRY", None)
         self.enabled = False
         return True
 
     def status(self):
-        return {'enabled': self.enabled, 'endpoint': self.endpoint, 'logfile': str(self.logfile)}
+        return {
+            "enabled": self.enabled,
+            "endpoint": self.endpoint,
+            "logfile": str(self.logfile),
+        }
 
     def track_event(self, event: str, payload: dict = None):
         if not self.enabled:
             return False
         payload = payload or {}
         record = {
-            'event': event,
-            'payload': payload,
-            'timestamp': datetime.utcnow().isoformat() + 'Z'
+            "event": event,
+            "payload": payload,
+            "timestamp": datetime.utcnow().isoformat() + "Z",
         }
         try:
             self.logfile.parent.mkdir(parents=True, exist_ok=True)
-            with self.logfile.open('a', encoding='utf-8') as f:
-                f.write(json.dumps(record, separators=(',', ':')) + '\n')
+            with self.logfile.open("a", encoding="utf-8") as f:
+                f.write(json.dumps(record, separators=(",", ":")) + "\n")
         except Exception:
             # best-effort: never raise from telemetry
             return False
@@ -63,8 +67,13 @@ class Telemetry:
         if self.endpoint:
             try:
                 import urllib.request
-                req = urllib.request.Request(self.endpoint, data=json.dumps(record).encode('utf-8'), headers={'Content-Type': 'application/json'})
-                with urllib.request.urlopen(req, timeout=5) as resp:
+
+                req = urllib.request.Request(
+                    self.endpoint,
+                    data=json.dumps(record).encode("utf-8"),
+                    headers={"Content-Type": "application/json"},
+                )
+                with urllib.request.urlopen(req, timeout=5):
                     pass
             except Exception:
                 # ignore network failures

@@ -1,6 +1,6 @@
 from click.testing import CliRunner
+
 from bldrx.cli import cli
-from pathlib import Path
 
 
 def test_cli_add_templates_dry_run_json(tmp_path):
@@ -13,10 +13,26 @@ def test_cli_add_templates_dry_run_json(tmp_path):
     dest.mkdir()
 
     runner = CliRunner()
-    result = runner.invoke(cli, ["add-templates", str(dest), "--templates", "chg", "--dry-run", "--json", "--meta", "project_name=Z"], env={"BLDRX_TEMPLATES_DIR": str(templates)})
+    result = runner.invoke(
+        cli,
+        [
+            "add-templates",
+            str(dest),
+            "--templates",
+            "chg",
+            "--dry-run",
+            "--json",
+            "--meta",
+            "project_name=Z",
+        ],
+        env={"BLDRX_TEMPLATES_DIR": str(templates)},
+    )
     assert result.exit_code == 0
     import json
+
     data = json.loads(result.output.strip().splitlines()[-1])
     # should be a list with our file entry
     assert isinstance(data, list)
-    assert any(d['path'].endswith('file.txt') and d['action'] == 'would-render' for d in data)
+    assert any(
+        d["path"].endswith("file.txt") and d["action"] == "would-render" for d in data
+    )

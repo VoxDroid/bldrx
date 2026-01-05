@@ -1,10 +1,12 @@
 import subprocess
-from pathlib import Path
+
 from bldrx.engine import Engine
 
 
 def _git(*args, cwd):
-    return subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True, text=True)
+    return subprocess.run(
+        ["git", *args], cwd=cwd, check=True, capture_output=True, text=True
+    )
 
 
 def test_backup_created_before_apply(tmp_path):
@@ -19,10 +21,16 @@ def test_backup_created_before_apply(tmp_path):
     dest.mkdir()
     (dest / "existing.txt").write_text("OLD CONTENT")
 
-    engine = Engine(templates_root=templates_dir, user_templates_root=tmp_path / "user_templates")
+    engine = Engine(
+        templates_root=templates_dir, user_templates_root=tmp_path / "user_templates"
+    )
 
     # act: apply with backup flag (TDD: currently not implemented)
-    list(engine.apply_template("safe", dest, {"project_name": "X"}, force=True, backup=True))
+    list(
+        engine.apply_template(
+            "safe", dest, {"project_name": "X"}, force=True, backup=True
+        )
+    )
 
     # assert: backups dir exists with previous content
     backups_root = dest / ".bldrx" / "backups"
@@ -56,11 +64,29 @@ def test_git_commit_created_on_apply(tmp_path):
     _git("add", ".", cwd=dest)
     _git("commit", "-m", "initial commit", cwd=dest)
 
-    engine = Engine(templates_root=templates_dir, user_templates_root=tmp_path / "user_templates")
+    engine = Engine(
+        templates_root=templates_dir, user_templates_root=tmp_path / "user_templates"
+    )
 
     # act: apply template with git_commit (TDD: currently not implemented)
-    list(engine.apply_template("safe", dest, {"project_name": "X"}, force=True, backup=True, git_commit=True, git_message="Apply safe template"))
+    list(
+        engine.apply_template(
+            "safe",
+            dest,
+            {"project_name": "X"},
+            force=True,
+            backup=True,
+            git_commit=True,
+            git_message="Apply safe template",
+        )
+    )
 
     # assert: last git commit message is our message
-    res = subprocess.run(["git", "log", "-1", "--pretty=%B"], cwd=dest, capture_output=True, text=True, check=True)
+    res = subprocess.run(
+        ["git", "log", "-1", "--pretty=%B"],
+        cwd=dest,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
     assert "Apply safe template" in res.stdout

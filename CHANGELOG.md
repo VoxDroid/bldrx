@@ -2,11 +2,6 @@
 
 All notable changes to this project are documented in this file.
 
-## Unreleased — Planned improvements (Top priorities)
-
-- CI: Added a `type-check` job using `pyright` to run static typing checks against the `bldrx` package (configured via `pyrightconfig.json`).
-- Dev: Kept a local `mypy` pre-commit hook (runs `python -m mypy bldrx --ignore-missing-imports`) for fast developer feedback; CI uses `pyright` as a fast, robust type checker.
-
 ## 2026-01-05 — 0.1.6
 
 - CI:
@@ -16,6 +11,12 @@ All notable changes to this project are documented in this file.
   - Updated `README.md` with PyPI installation instructions (`pip` and `pipx`) and added a PyPI version badge and link to the project metadata.
 - Project management:
   - Updated `PROJECT_OUTLINE.md` and TODO list to reflect the CI updates and next steps.
+- CI & types:
+  - Added a `type-check` CI job using `pyright` (configured via `pyrightconfig.json`) and kept a local `mypy` pre-commit hook (`--ignore-missing-imports`) for fast developer feedback; CI remains the source of truth.
+- Docs & templates:
+  - Normalized and cleaned license templates (AGPL-3.0, Apache-2.0, Artistic-2.0, Boost-1.0, CC0-1.0, EPL-2.0, GPL-2.0, GPL-3.0, LGPL-3.0, MPL-2.0, UNLICENSE): removed escaped sequences and ensured consistent formatting. Added `scripts/clean_license_templates.py` and tests (`tests/test_license_templates_clean.py`) to guard against regressions.
+- Docs: Added `docs/GETTING_STARTED.md` and integration tests demonstrating scaffold and template injection workflows.
+- Dev tooling: Added `scripts/pyright_wrapper.py` to make local `pyright` optional and updated pre-commit hooks to include `pyright` (optional) and `mypy` (installed via mirrors-mypy).
 
 ## 2026-01-05 — 0.1.5
 

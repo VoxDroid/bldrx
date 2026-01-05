@@ -3,7 +3,7 @@ from __future__ import annotations
 import importlib.util
 import shutil
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 
 def _default_user_plugins_dir() -> Path:
@@ -20,7 +20,7 @@ def _default_user_plugins_dir() -> Path:
 class PluginManager:
     """Manage installed plugins (install, list, remove, and load at runtime)."""
 
-    def __init__(self, engine: Any, plugins_root: Path | None = None):
+    def __init__(self, engine: Any, plugins_root: Optional[Path] = None):
         """Create a PluginManager bound to an Engine instance.
 
         Parameters:
@@ -46,7 +46,7 @@ class PluginManager:
         return sorted(out)
 
     def install_plugin(
-        self, src_path: Path, name: str | None = None, force: bool = False
+        self, src_path: Path, name: Optional[str] = None, force: bool = False
     ) -> Path:
         """Install a plugin from `src_path` into the user plugins directory and return the installed path."""
         src = Path(src_path)

@@ -2,6 +2,7 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 
 def _default_registry_dir() -> Path:
@@ -36,10 +37,10 @@ class Registry:
         name: str = None,
         version: str = "0.0.0",
         description: str = "",
-        tags: list | None = None,
+        tags: Optional[list] = None,
         force: bool = False,
         sign: bool = False,
-        key: str | None = None,
+        key: Optional[str] = None,
     ) -> dict:
         """Publish a local template directory into the registry. Returns the metadata dict that was written to disk."""
         src = Path(src)
@@ -93,7 +94,7 @@ class Registry:
                 out.append(json.loads(p.read_text(encoding="utf-8")))
         return out
 
-    def search(self, q: str | None = None) -> list:
+    def search(self, q: Optional[str] = None) -> list:
         """Search entries by name, description or tags (case-insensitive)."""
         q = q or ""
         ql = q.lower()
@@ -107,7 +108,7 @@ class Registry:
                 res.append(e)
         return res
 
-    def get(self, name: str, version: str | None = None) -> dict:
+    def get(self, name: str, version: Optional[str] = None) -> dict:
         """Return metadata for `name` (exact match). If `version` provided, return the specific version or raise KeyError."""
         # if version provided, exact match; else first matching name
         for e in self.list_entries():
@@ -117,7 +118,7 @@ class Registry:
                 return e
         raise KeyError(f"Catalog entry '{name}' not found")
 
-    def remove(self, name: str, version: str | None = None) -> list:
+    def remove(self, name: str, version: Optional[str] = None) -> list:
         """Remove matching entries and return list of removed metadata objects."""
         removed = []
         for p in list(self.root.iterdir()):

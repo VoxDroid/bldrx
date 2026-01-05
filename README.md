@@ -12,6 +12,7 @@ This README contains quick installation and usage instructions. For design detai
 **Table of Contents**
 
 - [Quickstart](#quickstart)
+- [Getting Started](docs/GETTING_STARTED.md)
 - [Examples](#examples)
 - [Configuration](#configuration)
 - [Contributing & Support](#contributing--support)

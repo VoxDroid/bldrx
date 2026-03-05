@@ -1,0 +1,87 @@
+<svg width="100%" height="100%" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Facet Gradients for the shattered pieces -->
+    <linearGradient id="s2" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00C9FF"/>
+      <stop offset="100%" stop-color="#92FE9D"/>
+    </linearGradient>
+    <linearGradient id="s3" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#021B79"/>
+      <stop offset="100%" stop-color="#0575E6"/>
+    </linearGradient>
+    <linearGradient id="s4" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#11998E"/>
+      <stop offset="100%" stop-color="#38EF7D"/>
+    </linearGradient>
+    <linearGradient id="s5" x1="1" y1="1" x2="0" y2="0">
+      <stop offset="0%" stop-color="#2193B0"/>
+      <stop offset="100%" stop-color="#6DD5ED"/>
+    </linearGradient>
+    <linearGradient id="s6" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%" stop-color="#005C97"/>
+      <stop offset="100%" stop-color="#363795"/>
+    </linearGradient>
+    
+    <!-- Gloss Overlay Gradient to act as a 3D lighting shader -->
+    <linearGradient id="gloss" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.6"/>
+      <stop offset="40%" stop-color="#FFFFFF" stop-opacity="0.0"/>
+      <stop offset="60%" stop-color="#000000" stop-opacity="0.0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.5"/>
+    </linearGradient>
+  </defs>
+
+  <g transform="translate(256, 256) scale(1.15)">
+    <!-- Main Geo Group with Shader (No Drop Shadow) -->
+    <g>
+      <!-- perfectly tiled non-overlapping shattered polygons -->
+      <polygon points="0,-140 121.24,-70 15,-60" fill="url(#s5)" />
+      <polygon points="121.24,-70 45,10 15,-60" fill="url(#s6)" />
+      <polygon points="121.24,-70 121.24,70 45,10" fill="url(#s2)" />
+      <polygon points="121.24,70 0,140 45,10" fill="url(#s4)" />
+      <polygon points="0,140 -20,50 45,10" fill="url(#s3)" />
+      <polygon points="0,140 -121.24,70 -20,50" fill="url(#s5)" />
+      <polygon points="-121.24,70 -121.24,-70 -20,50" fill="url(#s6)" />
+      <polygon points="-121.24,-70 15,-60 -20,50" fill="url(#s2)" />
+      <polygon points="-121.24,-70 0,-140 15,-60" fill="url(#s3)" />
+      <polygon points="15,-60 45,10 -20,50" fill="url(#s4)" />
+
+      <!-- Overall Shiny Glass Overlay -->
+      <polygon points="0,-140 121.24,-70 121.24,70 0,140 -121.24,70 -121.24,-70" fill="url(#gloss)" />
+    </g>
+
+    <!-- Unified, perfectly consistent stroke lines drawn *over* the geometry -->
+    <path d="M 0,-140 
+             L 121.24,-70 
+             L 121.24,70 
+             L 0,140 
+             L -121.24,70 
+             L -121.24,-70 Z 
+             M 0,-140 L 15,-60 
+             M 121.24,-70 L 15,-60 
+             M 121.24,-70 L 45,10 
+             M 121.24,70 L 45,10 
+             M 0,140 L 45,10 
+             M 0,140 L -20,50 
+             M -121.24,70 L -20,50 
+             M -121.24,-70 L -20,50 
+             M -121.24,-70 L 15,-60 
+             M 15,-60 L 45,10 
+             M 45,10 L -20,50 
+             M -20,50 L 15,-60" 
+          stroke="#FFFFFF" stroke-opacity="0.8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+
+    <!-- Intersection Nodes for clean geometry finishes -->
+    <g fill="#FFFFFF" fill-opacity="0.9">
+      <circle cx="0" cy="-140" r="3" />
+      <circle cx="121.24" cy="-70" r="3" />
+      <circle cx="121.24" cy="70" r="3" />
+      <circle cx="0" cy="140" r="3" />
+      <circle cx="-121.24" cy="70" r="3" />
+      <circle cx="-121.24" cy="-70" r="3" />
+      <circle cx="15" cy="-60" r="3.5" />
+      <circle cx="45" cy="10" r="3.5" />
+      <circle cx="-20" cy="50" r="3.5" />
+    </g>
+  </g>
+</svg>

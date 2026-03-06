@@ -31,7 +31,7 @@
     </linearGradient>
   </defs>
 
-  <g transform="translate(256, 256) scale(1.15)">
+  <g transform="translate(256, 256) scale(1.7857)">
     <!-- Main Geo Group with Shader (No Drop Shadow) -->
     <g>
       <!-- perfectly tiled non-overlapping shattered polygons -->

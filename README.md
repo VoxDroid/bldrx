@@ -1,5 +1,7 @@
 # bldrx — Project scaffolding & template injector
 
+![bldrx logo](/assets/logo/logo.svg)
+
 [![CI](https://img.shields.io/github/actions/workflow/status/VoxDroid/bldrx/ci.yml?branch=main&style=flat-square)](https://github.com/VoxDroid/bldrx/actions)
 [![PyPI - Version](https://img.shields.io/pypi/v/bldrx?style=flat-square)](https://pypi.org/project/bldrx)
 [![PyPI - License](https://img.shields.io/pypi/l/bldrx?style=flat-square)](https://opensource.org/licenses/MIT)

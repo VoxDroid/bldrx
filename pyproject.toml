@@ -32,6 +32,9 @@ bldrx = "bldrx.cli:cli"
 [tool.setuptools]
 include-package-data = true
 
+[tool.setuptools.packages]
+find = { exclude = ["assets*", "tests*"] }
+
 [tool.setuptools.package-data]
 "bldrx" = ["templates/**/*"]
 
